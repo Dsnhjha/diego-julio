@@ -23,6 +23,12 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
   const inProgress = tasks.filter(t => t.status === 'in_progress')
   const completed  = tasks.filter(t => t.status === 'completed')
 
+  async function deleteTask(id: string) {
+    await TaskService.delete(id)
+    setTasks(prev => prev.filter(t => t.id !== id))
+    onToast('Tarefa removida.')
+  }
+
   async function moveTask(id: string, status: Task['status']) {
     if (status === 'in_progress' && inProgress.length >= WIP_LIMIT) {
       onToast(`Limite de ${WIP_LIMIT} tarefas em andamento atingido. Conclua uma antes.`, true)
@@ -94,16 +100,16 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
 
       {/* Board */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        <KanbanCol title="Backlog" count={backlog.length} tasks={backlog} colType="backlog" wipCount={inProgress.length} onMove={moveTask} />
-        <KanbanCol title="Em Andamento" wip={`${inProgress.length} / ${WIP_LIMIT}`} wipOver={inProgress.length > WIP_LIMIT} tasks={inProgress} colType="in_progress" wipCount={inProgress.length} onMove={moveTask} />
-        <KanbanCol title="Concluído" doneCount={completed.length} tasks={completed} colType="completed" wipCount={inProgress.length} onMove={moveTask} />
+        <KanbanCol title="Backlog" count={backlog.length} tasks={backlog} colType="backlog" wipCount={inProgress.length} onMove={moveTask} onDelete={deleteTask} />
+        <KanbanCol title="Em Andamento" wip={`${inProgress.length} / ${WIP_LIMIT}`} wipOver={inProgress.length > WIP_LIMIT} tasks={inProgress} colType="in_progress" wipCount={inProgress.length} onMove={moveTask} onDelete={deleteTask} />
+        <KanbanCol title="Concluído" doneCount={completed.length} tasks={completed} colType="completed" wipCount={inProgress.length} onMove={moveTask} onDelete={deleteTask} />
       </div>
     </div>
   )
 }
 
 function KanbanCol({
-  title, count, wip, wipOver, doneCount, tasks, colType, wipCount, onMove,
+  title, count, wip, wipOver, doneCount, tasks, colType, wipCount, onMove, onDelete,
 }: {
   title: string
   count?: number
@@ -114,6 +120,7 @@ function KanbanCol({
   colType: 'backlog' | 'in_progress' | 'completed'
   wipCount: number
   onMove: (id: string, status: Task['status']) => void
+  onDelete: (id: string) => void
 }) {
   return (
     <div style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 6, padding: 14, minHeight: 180 }}>
@@ -127,17 +134,18 @@ function KanbanCol({
       </div>
 
       {tasks.map(task => (
-        <TaskCard key={task.id} task={task} colType={colType} wipCount={wipCount} onMove={onMove} />
+        <TaskCard key={task.id} task={task} colType={colType} wipCount={wipCount} onMove={onMove} onDelete={onDelete} />
       ))}
     </div>
   )
 }
 
-function TaskCard({ task, colType, wipCount, onMove }: {
+function TaskCard({ task, colType, wipCount, onMove, onDelete }: {
   task: Task
   colType: 'backlog' | 'in_progress' | 'completed'
   wipCount: number
   onMove: (id: string, status: Task['status']) => void
+  onDelete: (id: string) => void
 }) {
   const borderLeft = colType === 'completed' ? '3px solid var(--good)' : colType === 'in_progress' ? '3px solid var(--accent)' : '1px solid var(--border)'
 
@@ -146,26 +154,35 @@ function TaskCard({ task, colType, wipCount, onMove }: {
       <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--fg)', marginBottom: 6, lineHeight: 1.4, textDecoration: colType === 'completed' ? 'line-through' : 'none' }}>
         {task.title}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-        {colType === 'backlog' && (
-          <Btn
-            style={{ fontSize: '0.68rem', padding: '3px 8px' }}
-            disabled={wipCount >= WIP_LIMIT}
-            title={wipCount >= WIP_LIMIT ? 'Limite de andamento atingido' : undefined}
-            onClick={() => onMove(task.id, 'in_progress')}
-          >
-            → Andamento
-          </Btn>
-        )}
-        {colType === 'in_progress' && (
-          <Btn
-            variant="good"
-            style={{ fontSize: '0.68rem', padding: '3px 8px' }}
-            onClick={() => onMove(task.id, 'completed')}
-          >
-            ✓ Concluir
-          </Btn>
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+        <button
+          onClick={() => onDelete(task.id)}
+          title="Apagar tarefa"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-dim)', fontSize: '0.75rem', padding: '2px 4px', lineHeight: 1 }}
+        >
+          ✕
+        </button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {colType === 'backlog' && (
+            <Btn
+              style={{ fontSize: '0.68rem', padding: '3px 8px' }}
+              disabled={wipCount >= WIP_LIMIT}
+              title={wipCount >= WIP_LIMIT ? 'Limite de andamento atingido' : undefined}
+              onClick={() => onMove(task.id, 'in_progress')}
+            >
+              → Andamento
+            </Btn>
+          )}
+          {colType === 'in_progress' && (
+            <Btn
+              variant="good"
+              style={{ fontSize: '0.68rem', padding: '3px 8px' }}
+              onClick={() => onMove(task.id, 'completed')}
+            >
+              ✓ Concluir
+            </Btn>
+          )}
+        </div>
       </div>
     </div>
   )

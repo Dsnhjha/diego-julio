@@ -66,6 +66,14 @@ export const TaskService = {
     return data
   },
 
+  async delete(id: string): Promise<void> {
+    if (USE_MOCK) {
+      _mockTasks = _mockTasks.filter(t => t.id !== id)
+      return
+    }
+    await supabase!.from('tasks').delete().eq('id', id)
+  },
+
   async updateStatus(id: string, status: Task['status']): Promise<void> {
     if (USE_MOCK) {
       const t = _mockTasks.find(t => t.id === id)
