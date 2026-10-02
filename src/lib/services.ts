@@ -74,6 +74,16 @@ export const TaskService = {
     }
 
     await supabase!.from('tasks').update({ status }).eq('id', id)
+
+    // Recalcula progresso do projeto
+    const task = await supabase!.from('tasks').select('project_id').eq('id', id).single()
+    if (!task.data?.project_id) return
+    const projectId = task.data.project_id
+    const { data: all } = await supabase!.from('tasks').select('status').eq('project_id', projectId)
+    if (!all || all.length === 0) return
+    const done = all.filter(t => t.status === 'completed').length
+    const progress = Math.round((done / all.length) * 100)
+    await supabase!.from('projects').update({ progress }).eq('id', projectId)
   },
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExecutionLogService, ProjectService } from '../lib/services'
+import { ExecutionLogService, ProjectService, TaskService } from '../lib/services'
 import type { Project, Stats } from '../types'
 import { Card, CardLabel } from './ui'
 
@@ -7,20 +7,28 @@ export function Dashboard() {
   const [project, setProject] = useState<Project | null>(null)
   const [streak,  setStreak]  = useState(0)
   const [stats,   setStats]   = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
+  const [pct,     setPct]     = useState(0)
 
   useEffect(() => {
     Promise.all([
       ProjectService.getActive(),
       ExecutionLogService.getStreak(),
       ExecutionLogService.getStats(),
-    ]).then(([p, s, st]) => {
+    ]).then(async ([p, s, st]) => {
       setProject(p)
       setStreak(s)
       setStats(st)
+      if (p) {
+        const tasks = await TaskService.getByProject(p.id)
+        if (tasks.length > 0) {
+          const done = tasks.filter(t => t.status === 'completed').length
+          setPct(Math.round((done / tasks.length) * 100))
+        } else {
+          setPct(p.progress)
+        }
+      }
     })
   }, [])
-
-  const pct    = project ? project.progress : 0
   const filled = Math.round(pct / 10)
   const blocks = '█'.repeat(filled) + '░'.repeat(10 - filled)
 
