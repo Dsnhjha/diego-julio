@@ -16,7 +16,7 @@ export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) =>
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !date) { onToast('Preencha título e data.', true); return }
-    const idea = await IdeaParkingService.create({ title: title.trim(), description: desc.trim(), available_at: date })
+    const idea = await IdeaParkingService.create({ title: title.trim(), description: desc.trim(), unlock_date: date })
     setIdeas(prev => [...prev, idea])
     setTitle(''); setDesc(''); setDate('')
     onToast('Ideia estacionada. Foco no projeto atual.')
@@ -59,8 +59,8 @@ export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) =>
       {/* Lista */}
       <div style={{ display: 'grid', gap: 12 }}>
         {ideas.map(idea => {
-          const locked = idea.available_at > today
-          const days   = daysUntil(idea.available_at)
+          const locked = idea.unlock_date > today
+          const days   = daysUntil(idea.unlock_date)
           return (
             <div key={idea.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6, padding: 16, display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 12, alignItems: 'start', opacity: locked ? 0.7 : 1 }}>
               <span style={{ fontSize: '1.1rem', color: locked ? 'var(--lock)' : 'var(--good)', paddingTop: 2 }}>
@@ -76,7 +76,7 @@ export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) =>
               </div>
               <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.68rem', textAlign: 'right', whiteSpace: 'nowrap', paddingTop: 2, color: locked && days <= 30 ? 'var(--accent)' : 'var(--fg-muted)' }}>
                 {locked ? (
-                  <>Disponível em<br /><strong>{formatDate(idea.available_at)}</strong><br /><span style={{ color: 'var(--fg-dim)', fontSize: '0.65rem' }}>{days} dias</span></>
+                  <>Disponível em<br /><strong>{formatDate(idea.unlock_date)}</strong><br /><span style={{ color: 'var(--fg-dim)', fontSize: '0.65rem' }}>{days} dias</span></>
                 ) : (
                   <span style={{ color: 'var(--good)' }}>Disponível ✓</span>
                 )}

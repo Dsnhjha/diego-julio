@@ -1,42 +1,46 @@
 export interface Project {
-  id: number
-  name: string
-  status: 'active' | 'completed' | 'archived'
-  tasks_total: number
-  tasks_done: number
-  finish_line: string
-  started_at: string
+  id: string
+  title: string
+  objective?: string
+  definition_of_done?: string
+  status: 'active' | 'completed' | 'paused' | 'parking'
+  progress: number
+  target_date?: string
+  created_at: string
 }
 
 export interface Task {
-  id: number
-  project_id: number
+  id: string
+  project_id: string
   title: string
-  status: 'backlog' | 'active' | 'done'
-  priority: 'high' | 'med' | 'low'
+  status: 'backlog' | 'in_progress' | 'completed'
+  due_date?: string
   created_at: string
 }
 
 export interface IdeaParking {
-  id: number
+  id: string
   title: string
-  description: string
-  available_at: string
+  description?: string
+  unlock_date: string
+  created_at: string
 }
 
 export interface IdentityPhrase {
-  id: number
+  id: string
+  category: string
   phrase: string
-  streak: number
-  done_today: boolean
+  last_repeated_date?: string
+  streak_count: number
+  created_at: string
 }
 
 export interface ExecutionLog {
-  id: number
-  date: string
-  type: 'task' | 'project'
-  description: string
-  project: string
+  id: string
+  log_date: string
+  tasks_completed_count: number
+  worked_today: boolean
+  created_at: string
 }
 
 export interface Stats {

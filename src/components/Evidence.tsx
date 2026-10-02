@@ -53,7 +53,7 @@ export function Evidence() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              {['Data', 'Tipo', 'Descrição', 'Projeto'].map(h => (
+              {['Data', 'Tarefas', 'Trabalhou'].map(h => (
                 <th key={h} style={{ fontFamily: 'var(--f-mono)', fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
                   {h}
                 </th>
@@ -64,20 +64,26 @@ export function Evidence() {
             {logs.map(log => (
               <tr key={log.id}>
                 <td style={{ fontFamily: 'var(--f-mono)', fontSize: '0.75rem', color: 'var(--fg-muted)', padding: '10px 12px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                  {formatDate(log.date)}
+                  {formatDate(log.log_date)}
+                </td>
+                <td style={{ fontFamily: 'var(--f-mono)', fontSize: '0.82rem', padding: '10px 12px', borderBottom: '1px solid var(--border)', color: 'var(--accent)' }}>
+                  {log.tasks_completed_count}
                 </td>
                 <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: log.type === 'project' ? 'var(--accent)' : 'var(--good)', marginRight: 6, verticalAlign: 'middle' }} />
-                  {log.type === 'project' ? 'Projeto' : 'Tarefa'}
-                </td>
-                <td style={{ fontSize: '0.82rem', padding: '10px 12px', borderBottom: '1px solid var(--border)', minWidth: 0 }}>
-                  {log.description}
-                </td>
-                <td style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', padding: '10px 12px', borderBottom: '1px solid var(--border)', minWidth: 0 }}>
-                  {log.project}
+                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: log.worked_today ? 'var(--good)' : 'var(--border)', marginRight: 6, verticalAlign: 'middle' }} />
+                  <span style={{ fontSize: '0.78rem', color: log.worked_today ? 'var(--good)' : 'var(--fg-muted)' }}>
+                    {log.worked_today ? 'Sim' : 'Não'}
+                  </span>
                 </td>
               </tr>
             ))}
+            {logs.length === 0 && (
+              <tr>
+                <td colSpan={3} style={{ textAlign: 'center', color: 'var(--fg-muted)', fontSize: '0.85rem', padding: '32px 12px' }}>
+                  Nenhum registro ainda.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

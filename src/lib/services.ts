@@ -4,7 +4,6 @@ import {
 } from './mockData'
 import type { ExecutionLog, IdentityPhrase, IdeaParking, Project, Stats, Task } from '../types'
 
-// Usa mock quando o cliente Supabase não está configurado
 const USE_MOCK = supabase === null
 
 // ── Projetos ──────────────────────────────────────────────────────────────────
@@ -34,7 +33,7 @@ export const ProjectService = {
 let _mockTasks = [...mockTasks]
 
 export const TaskService = {
-  async getByProject(projectId: number): Promise<Task[]> {
+  async getByProject(projectId: string): Promise<Task[]> {
     if (USE_MOCK) return _mockTasks.filter(t => t.project_id === projectId)
 
     const { data } = await supabase!
@@ -45,9 +44,19 @@ export const TaskService = {
     return data ?? []
   },
 
-  async create(task: Omit<Task, 'id'>): Promise<Task> {
+  async getAll(): Promise<Task[]> {
+    if (USE_MOCK) return _mockTasks
+
+    const { data } = await supabase!
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: true })
+    return data ?? []
+  },
+
+  async create(task: Omit<Task, 'id' | 'created_at'>): Promise<Task> {
     if (USE_MOCK) {
-      const newTask: Task = { ...task, id: Date.now() }
+      const newTask: Task = { ...task, id: String(Date.now()), created_at: new Date().toISOString() }
       _mockTasks.push(newTask)
       return newTask
     }
@@ -57,7 +66,7 @@ export const TaskService = {
     return data
   },
 
-  async updateStatus(id: number, status: Task['status']): Promise<void> {
+  async updateStatus(id: string, status: Task['status']): Promise<void> {
     if (USE_MOCK) {
       const t = _mockTasks.find(t => t.id === id)
       if (t) t.status = status
@@ -79,13 +88,13 @@ export const IdeaParkingService = {
     const { data } = await supabase!
       .from('idea_parking')
       .select('*')
-      .order('available_at', { ascending: true })
+      .order('unlock_date', { ascending: true })
     return data ?? []
   },
 
-  async create(idea: Omit<IdeaParking, 'id'>): Promise<IdeaParking> {
+  async create(idea: Omit<IdeaParking, 'id' | 'created_at'>): Promise<IdeaParking> {
     if (USE_MOCK) {
-      const newIdea: IdeaParking = { ...idea, id: Date.now() }
+      const newIdea: IdeaParking = { ...idea, id: String(Date.now()), created_at: new Date().toISOString() }
       _mockIdeas.push(newIdea)
       return newIdea
     }
@@ -108,16 +117,42 @@ export const IdentityService = {
     return data ?? []
   },
 
-  async markRepeated(id: number): Promise<void> {
+  async createPhrase(phrase: Omit<IdentityPhrase, 'id' | 'created_at' | 'last_repeated_date'>): Promise<IdentityPhrase> {
+    if (USE_MOCK) {
+      const newPhrase: IdentityPhrase = { ...phrase, id: String(Date.now()), created_at: new Date().toISOString() }
+      _mockPhrases.push(newPhrase)
+      return newPhrase
+    }
+
+    const { data, error } = await supabase!.from('identity_phrases').insert(phrase).select().single()
+    if (error) throw error
+    return data
+  },
+
+  async markRepeated(id: string): Promise<void> {
+    const today = new Date().toISOString().split('T')[0]
+
     if (USE_MOCK) {
       const p = _mockPhrases.find(p => p.id === id)
-      if (p && !p.done_today) { p.streak++; p.done_today = true }
+      if (p && p.last_repeated_date !== today) {
+        p.streak_count++
+        p.last_repeated_date = today
+      }
       return
     }
 
+    const { data } = await supabase!
+      .from('identity_phrases')
+      .select('last_repeated_date, streak_count')
+      .eq('id', id)
+      .single()
+
+    if (!data) return
+    if (data.last_repeated_date === today) return
+
     await supabase!
       .from('identity_phrases')
-      .update({ done_today: true })
+      .update({ last_repeated_date: today, streak_count: (data.streak_count ?? 0) + 1 })
       .eq('id', id)
   },
 }
@@ -130,14 +165,15 @@ export const ExecutionLogService = {
 
     const { data } = await supabase!
       .from('execution_logs')
-      .select('date')
-      .order('date', { ascending: false })
+      .select('log_date')
+      .eq('worked_today', true)
+      .order('log_date', { ascending: false })
       .limit(60)
     if (!data) return 0
 
     let streak = 0
     const today = new Date().toISOString().split('T')[0]
-    const dates = [...new Set(data.map(r => r.date as string))].sort().reverse()
+    const dates = [...new Set(data.map(r => r.log_date as string))].sort().reverse()
     let expected = today
     for (const d of dates) {
       if (d === expected) {
@@ -154,15 +190,15 @@ export const ExecutionLogService = {
     if (USE_MOCK) return mockStats
 
     const [tasks, projects, logs] = await Promise.all([
-      supabase!.from('tasks').select('id', { count: 'exact' }).eq('status', 'done'),
+      supabase!.from('tasks').select('id', { count: 'exact' }).eq('status', 'completed'),
       supabase!.from('projects').select('id', { count: 'exact' }).eq('status', 'completed'),
-      supabase!.from('execution_logs').select('date'),
+      supabase!.from('execution_logs').select('log_date').eq('worked_today', true),
     ])
 
     return {
       tasks_done:     tasks.count    ?? 0,
       projects_done:  projects.count ?? 0,
-      execution_days: new Set(logs.data?.map(r => r.date as string)).size,
+      execution_days: new Set(logs.data?.map(r => r.log_date as string)).size,
     }
   },
 
@@ -172,7 +208,7 @@ export const ExecutionLogService = {
     const { data } = await supabase!
       .from('execution_logs')
       .select('*')
-      .order('date', { ascending: false })
+      .order('log_date', { ascending: false })
       .limit(limit)
     return data ?? []
   },

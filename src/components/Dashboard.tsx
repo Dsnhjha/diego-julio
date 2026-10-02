@@ -20,7 +20,7 @@ export function Dashboard() {
     })
   }, [])
 
-  const pct    = project ? Math.round(project.tasks_done / project.tasks_total * 100) : 0
+  const pct    = project ? project.progress : 0
   const filled = Math.round(pct / 10)
   const blocks = '█'.repeat(filled) + '░'.repeat(10 - filled)
 
@@ -56,8 +56,14 @@ export function Dashboard() {
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
           }}>
-            {project?.name ?? '—'}
+            {project?.title ?? '—'}
           </div>
+
+          {project?.objective && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', marginTop: 4 }}>
+              {project.objective}
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
             <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.85rem', color: 'var(--accent)' }}>{blocks}</span>
@@ -68,14 +74,10 @@ export function Dashboard() {
             <div style={{ height: '100%', background: 'var(--accent)', width: `${pct}%`, borderRadius: 2, transition: 'width 0.6s ease' }} />
           </div>
 
-          <div style={{ fontSize: '0.78rem', color: 'var(--fg-muted)', marginBottom: 8 }}>
-            {project ? `${project.tasks_done} de ${project.tasks_total} tarefas concluídas` : '—'}
-          </div>
-
-          {project && (
+          {project?.definition_of_done && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--fg-muted)' }}>
               <span style={{ color: 'var(--good)' }}>⚑</span>
-              <span>{project.finish_line}</span>
+              <span>{project.definition_of_done}</span>
             </div>
           )}
         </Card>
