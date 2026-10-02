@@ -118,7 +118,7 @@ export function Identity({ onToast }: { onToast: (msg: string, warn?: boolean) =
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4 }}>
+                <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4, fontWeight: 700 }}>
                   {phrase.category}
                 </div>
                 <div style={{ fontFamily: 'var(--f-display)', fontSize: '1.35rem', fontWeight: 600, letterSpacing: '0.03em', color: 'var(--fg)', lineHeight: 1.35 }}>
