@@ -71,7 +71,38 @@ export const TaskService = {
       _mockTasks = _mockTasks.filter(t => t.id !== id)
       return
     }
+
+    // Busca a tarefa antes de apagar para saber o status e projeto
+    const { data: task } = await supabase!.from('tasks').select('status, project_id').eq('id', id).single()
     await supabase!.from('tasks').delete().eq('id', id)
+
+    if (!task) return
+
+    // Recalcula progresso do projeto
+    if (task.project_id) {
+      const { data: all } = await supabase!.from('tasks').select('status').eq('project_id', task.project_id)
+      const progress = all && all.length > 0
+        ? Math.round(all.filter(t => t.status === 'completed').length / all.length * 100)
+        : 0
+      await supabase!.from('projects').update({ progress }).eq('id', task.project_id)
+    }
+
+    // Se era concluída, decrementa o log de execução do dia
+    if (task.status === 'completed') {
+      const today = new Date().toISOString().split('T')[0]
+      const { data: log } = await supabase!
+        .from('execution_logs')
+        .select('id, tasks_completed_count')
+        .eq('log_date', today)
+        .single()
+      if (log && log.tasks_completed_count > 1) {
+        await supabase!.from('execution_logs')
+          .update({ tasks_completed_count: log.tasks_completed_count - 1 })
+          .eq('id', log.id)
+      } else if (log) {
+        await supabase!.from('execution_logs').delete().eq('id', log.id)
+      }
+    }
   },
 
   async updateStatus(id: string, status: Task['status']): Promise<void> {
