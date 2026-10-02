@@ -42,9 +42,10 @@ interface BtnProps {
   disabled?: boolean
   style?: CSSProperties
   title?: string
+  type?: 'button' | 'submit' | 'reset'
 }
 
-export function Btn({ onClick, children, variant = 'default', disabled, style, title }: BtnProps) {
+export function Btn({ onClick, children, variant = 'default', disabled, style, title, type = 'button' }: BtnProps) {
   const base: CSSProperties = {
     fontFamily: 'var(--f-body)',
     fontSize: '0.8rem',
@@ -77,6 +78,7 @@ export function Btn({ onClick, children, variant = 'default', disabled, style, t
 
   return (
     <button
+      type={type}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       title={title}
