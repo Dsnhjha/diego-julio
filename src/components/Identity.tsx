@@ -92,7 +92,7 @@ export function Identity({ onToast }: { onToast: (msg: string, warn?: boolean) =
               />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Btn type="submit" variant="primary" onClick={() => addPhrase()}>Adicionar</Btn>
+              <Btn type="submit" variant="primary">Adicionar</Btn>
               <Btn type="button" onClick={() => setShowForm(false)}>Cancelar</Btn>
             </div>
           </form>
