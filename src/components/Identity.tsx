@@ -13,7 +13,7 @@ export function Identity({ onToast }: { onToast: (msg: string, warn?: boolean) =
     IdentityService.getPhrases().then(setPhrases)
   }, [])
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 
   async function repeat(id: string) {
     const phrase = phrases.find(p => p.id === id)

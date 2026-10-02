@@ -6,6 +6,10 @@ import type { ExecutionLog, IdentityPhrase, IdeaParking, Project, Stats, Task } 
 
 const USE_MOCK = supabase === null
 
+function localDateStr() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+}
+
 // ── Projetos ──────────────────────────────────────────────────────────────────
 
 export const ProjectService = {
@@ -98,7 +102,7 @@ export const TaskService = {
 
     // Se era concluída, decrementa o log de execução do dia
     if (task.status === 'completed') {
-      const today = new Date().toISOString().split('T')[0]
+      const today = localDateStr()
       const { data: log } = await supabase!
         .from('execution_logs')
         .select('id, tasks_completed_count')
@@ -135,7 +139,7 @@ export const TaskService = {
 
     // Registra log de execução do dia ao concluir uma tarefa
     if (status === 'completed') {
-      const today = new Date().toISOString().split('T')[0]
+      const today = localDateStr()
       const { data: existing } = await supabase!
         .from('execution_logs')
         .select('id, tasks_completed_count')
@@ -209,7 +213,7 @@ export const IdentityService = {
   },
 
   async markRepeated(id: string): Promise<void> {
-    const today = new Date().toISOString().split('T')[0]
+    const today = localDateStr()
 
     if (USE_MOCK) {
       const p = _mockPhrases.find(p => p.id === id)
@@ -251,7 +255,7 @@ export const ExecutionLogService = {
     if (!data) return 0
 
     let streak = 0
-    const today = new Date().toISOString().split('T')[0]
+    const today = localDateStr()
     const dates = [...new Set(data.map(r => r.log_date as string))].sort().reverse()
     let expected = today
     for (const d of dates) {
