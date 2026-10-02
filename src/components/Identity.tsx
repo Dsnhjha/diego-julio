@@ -121,10 +121,10 @@ export function Identity({ onToast }: { onToast: (msg: string, warn?: boolean) =
                 <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4 }}>
                   {phrase.category}
                 </div>
-                <div style={{ fontFamily: 'var(--f-display)', fontSize: '1.15rem', fontWeight: 600, letterSpacing: '0.03em', color: 'var(--fg)', lineHeight: 1.35 }}>
+                <div style={{ fontFamily: 'var(--f-display)', fontSize: '1.35rem', fontWeight: 600, letterSpacing: '0.03em', color: 'var(--fg)', lineHeight: 1.35 }}>
                   {phrase.phrase}
                 </div>
-                <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.7rem', color: 'var(--fg-muted)', marginTop: 6 }}>
+                <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.8rem', color: 'var(--fg-muted)', marginTop: 6 }}>
                   Sequência: <span style={{ color: 'var(--good)', fontWeight: 500 }}>{phrase.streak_count} dias</span>
                 </div>
               </div>
