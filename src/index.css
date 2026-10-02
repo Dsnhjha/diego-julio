@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* ─── Design tokens ─── */
+:root {
+  color-scheme: dark;
+  --bg:        #0d0e11;
+  --bg-raised: #13151a;
+  --bg-card:   #181b22;
+  --border:    #252830;
+  --border-hi: #343846;
+  --fg:        #e4e6ed;
+  --fg-muted:  #6b7280;
+  --fg-dim:    #3d4252;
+  --accent:    #f0a500;
+  --accent-lo: rgba(240,165,0,0.12);
+  --accent-hi: #f5bc40;
+  --good:      #34d27b;
+  --good-lo:   rgba(52,210,123,0.12);
+  --warn:      #f0a500;
+  --danger:    #e05858;
+  --danger-lo: rgba(224,88,88,0.12);
+  --lock:      #4b5563;
+  --f-display: 'Barlow Condensed', sans-serif;
+  --f-body:    'Inter', sans-serif;
+  --f-mono:    'IBM Plex Mono', monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg:        #f0f1f5;
+    --bg-raised: #f8f8fa;
+    --bg-card:   #ffffff;
+    --border:    #dde0e8;
+    --border-hi: #c5cad8;
+    --fg:        #181b22;
+    --fg-muted:  #5a6170;
+    --fg-dim:    #b0b6c3;
+    --accent:    #c77f00;
+    --accent-lo: rgba(199,127,0,0.10);
+    --accent-hi: #d98f10;
+    --good:      #1f9e58;
+    --good-lo:   rgba(31,158,88,0.10);
+    --lock:      #9ca3af;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg:        #f0f1f5;
+  --bg-raised: #f8f8fa;
+  --bg-card:   #ffffff;
+  --border:    #dde0e8;
+  --border-hi: #c5cad8;
+  --fg:        #181b22;
+  --fg-muted:  #5a6170;
+  --fg-dim:    #b0b6c3;
+  --accent:    #c77f00;
+  --accent-lo: rgba(199,127,0,0.10);
+  --accent-hi: #d98f10;
+  --good:      #1f9e58;
+  --good-lo:   rgba(31,158,88,0.10);
+  --lock:      #9ca3af;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
