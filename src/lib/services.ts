@@ -84,6 +84,27 @@ export const TaskService = {
     const done = all.filter(t => t.status === 'completed').length
     const progress = Math.round((done / all.length) * 100)
     await supabase!.from('projects').update({ progress }).eq('id', projectId)
+
+    // Registra log de execução do dia ao concluir uma tarefa
+    if (status === 'completed') {
+      const today = new Date().toISOString().split('T')[0]
+      const { data: existing } = await supabase!
+        .from('execution_logs')
+        .select('id, tasks_completed_count')
+        .eq('log_date', today)
+        .single()
+
+      if (existing) {
+        await supabase!
+          .from('execution_logs')
+          .update({ tasks_completed_count: existing.tasks_completed_count + 1, worked_today: true })
+          .eq('id', existing.id)
+      } else {
+        await supabase!
+          .from('execution_logs')
+          .insert({ log_date: today, tasks_completed_count: 1, worked_today: true })
+      }
+    }
   },
 }
 
