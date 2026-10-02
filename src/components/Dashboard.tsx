@@ -29,6 +29,7 @@ export function Dashboard() {
       }
     })
   }, [])
+
   const filled = Math.round(pct / 10)
   const blocks = '█'.repeat(filled) + '░'.repeat(10 - filled)
 

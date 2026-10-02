@@ -47,7 +47,7 @@ export default function App() {
       {tab === 'kanban'    && <Kanban   onToast={showToast} />}
       {tab === 'identity'  && <Identity onToast={showToast} />}
       {tab === 'parking'   && <Parking  onToast={showToast} />}
-      {tab === 'evidence'  && <Evidence />}
+      {tab === 'evidence'  && <Evidence onToast={showToast} />}
 
       {toast && <Toast key={toast.key} message={toast.message} warn={toast.warn} />}
     </Layout>

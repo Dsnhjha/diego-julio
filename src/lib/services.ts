@@ -26,6 +26,15 @@ export const ProjectService = {
     const { data } = await supabase!.from('projects').select('*')
     return data ?? []
   },
+
+  async complete(id: string): Promise<void> {
+    if (USE_MOCK) {
+      const p = mockProjects.find(p => p.id === id)
+      if (p) p.status = 'completed'
+      return
+    }
+    await supabase!.from('projects').update({ status: 'completed', progress: 100 }).eq('id', id)
+  },
 }
 
 // ── Tarefas ───────────────────────────────────────────────────────────────────

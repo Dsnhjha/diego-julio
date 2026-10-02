@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react'
-import { ExecutionLogService } from '../lib/services'
-import type { ExecutionLog, Stats } from '../types'
-import { formatDate } from './ui'
+import { ExecutionLogService, ProjectService } from '../lib/services'
+import type { ExecutionLog, Project, Stats } from '../types'
+import { Btn, formatDate } from './ui'
 
-export function Evidence() {
-  const [stats, setStats] = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
-  const [logs,  setLogs]  = useState<ExecutionLog[]>([])
+export function Evidence({ onToast }: { onToast: (msg: string, warn?: boolean) => void }) {
+  const [stats,   setStats]   = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
+  const [logs,    setLogs]    = useState<ExecutionLog[]>([])
+  const [project, setProject] = useState<Project | null>(null)
+  const [completing, setCompleting] = useState(false)
 
   useEffect(() => {
     Promise.all([
       ExecutionLogService.getStats(),
       ExecutionLogService.getRecent(10),
-    ]).then(([s, l]) => { setStats(s); setLogs(l) })
+      ProjectService.getActive(),
+    ]).then(([s, l, p]) => { setStats(s); setLogs(l); setProject(p) })
   }, [])
+
+  async function completeProject() {
+    if (!project) return
+    setCompleting(true)
+    await ProjectService.complete(project.id)
+    setProject(prev => prev ? { ...prev, status: 'completed' } : prev)
+    setStats(prev => ({ ...prev, projects_done: prev.projects_done + 1 }))
+    onToast('Projeto concluído. 🏆 Vitória registrada.')
+    setCompleting(false)
+  }
 
   const tiles = [
     { value: stats.tasks_done,     label: 'Tarefas Concluídas',    color: 'var(--accent)' },
@@ -42,6 +55,34 @@ export function Evidence() {
           </div>
         ))}
       </div>
+
+      {/* Botão concluir projeto */}
+      {project && project.status !== 'completed' && (
+        <div style={{ marginBottom: 24, padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 4 }}>
+              Projeto Ativo
+            </div>
+            <div style={{ fontFamily: 'var(--f-display)', fontSize: '1rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--fg)' }}>
+              {project.title}
+            </div>
+          </div>
+          <Btn
+            variant="good"
+            disabled={completing}
+            onClick={completeProject}
+            style={{ fontSize: '0.8rem', padding: '8px 18px', whiteSpace: 'nowrap' }}
+          >
+            {completing ? 'Salvando...' : '🏆 Concluir Projeto'}
+          </Btn>
+        </div>
+      )}
+
+      {project?.status === 'completed' && (
+        <div style={{ marginBottom: 24, padding: '12px 20px', background: 'var(--good-lo)', border: '1px solid var(--good)', borderRadius: 6, fontFamily: 'var(--f-mono)', fontSize: '0.75rem', color: 'var(--good)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          ✓ {project.title} — Projeto Concluído
+        </div>
+      )}
 
       <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0 0 20px' }} />
 
