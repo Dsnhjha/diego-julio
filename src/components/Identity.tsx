@@ -29,19 +29,24 @@ export function Identity({ onToast }: { onToast: (msg: string, warn?: boolean) =
     if (updated) onToast(`Sequência atualizada: ${updated.streak_count + 1} dias consecutivos.`)
   }
 
-  async function addPhrase(e: React.FormEvent) {
-    e.preventDefault()
+  async function addPhrase(e?: React.FormEvent) {
+    e?.preventDefault()
     if (!newPhrase.trim()) { onToast('Escreva a frase.', true); return }
-    const created = await IdentityService.createPhrase({
-      phrase: newPhrase.trim(),
-      category: newCat.trim() || 'Identidade',
-      streak_count: 0,
-    })
-    setPhrases(prev => [...prev, created])
-    setNewPhrase('')
-    setNewCat('')
-    setShowForm(false)
-    onToast('Frase adicionada.')
+    try {
+      const created = await IdentityService.createPhrase({
+        phrase: newPhrase.trim(),
+        category: newCat.trim() || 'Identidade',
+        streak_count: 0,
+      })
+      setPhrases(prev => [...prev, created])
+      setNewPhrase('')
+      setNewCat('')
+      setShowForm(false)
+      onToast('Frase adicionada.')
+    } catch (err) {
+      console.error('Erro ao criar frase:', err)
+      onToast('Erro ao salvar. Tente novamente.', true)
+    }
   }
 
   return (
@@ -87,7 +92,7 @@ export function Identity({ onToast }: { onToast: (msg: string, warn?: boolean) =
               />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Btn variant="primary">Adicionar</Btn>
+              <Btn type="submit" variant="primary" onClick={() => addPhrase()}>Adicionar</Btn>
               <Btn type="button" onClick={() => setShowForm(false)}>Cancelar</Btn>
             </div>
           </form>
