@@ -49,22 +49,11 @@ export function Dashboard() {
         EU <span style={{ color: 'var(--accent)' }}>TERMINO</span> O QUE CONSTRUO.
       </p>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: 16,
-        marginBottom: 24,
-      }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
         {/* Projeto principal */}
         <Card style={{ gridColumn: '1 / -1' }}>
           <CardLabel>Projeto Principal Ativo</CardLabel>
-          <div style={{
-            fontFamily: 'var(--f-display)',
-            fontSize: '1.3rem',
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}>
+          <div style={{ fontFamily: 'var(--f-display)', fontSize: '1.3rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             {project?.title ?? '—'}
           </div>
 
@@ -105,9 +94,9 @@ export function Dashboard() {
           <CardLabel>Placar Rápido</CardLabel>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
             {[
-              { value: stats.tasks_done,    label: 'Tarefas',     color: 'var(--accent)' },
-              { value: stats.projects_done, label: 'Projetos 🏆', color: 'var(--good)'   },
-              { value: stats.execution_days,label: 'Dias',        color: 'var(--fg)'     },
+              { value: stats.tasks_done,     label: 'Tarefas',     color: 'var(--accent)' },
+              { value: stats.projects_done,  label: 'Projetos 🏆', color: 'var(--good)'   },
+              { value: stats.execution_days, label: 'Dias',        color: 'var(--fg)'     },
             ].map(({ value, label, color }) => (
               <div key={label} style={{ textAlign: 'center', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 5, padding: '12px 8px' }}>
                 <div style={{ fontFamily: 'var(--f-display)', fontSize: '2rem', fontWeight: 700, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>

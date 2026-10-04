@@ -6,10 +6,15 @@ import { Btn, Card } from './ui'
 const WIP_LIMIT = 3
 
 export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => void }) {
-  const [project,  setProject]  = useState<Project | null>(null)
-  const [tasks,    setTasks]    = useState<Task[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
+  const [project,      setProject]      = useState<Project | null>(null)
+  const [tasks,        setTasks]        = useState<Task[]>([])
+  const [showForm,     setShowForm]     = useState(false)
+  const [newTitle,     setNewTitle]     = useState('')
+  const [showNewProj,  setShowNewProj]  = useState(false)
+  const [projTitle,    setProjTitle]    = useState('')
+  const [projObj,      setProjObj]      = useState('')
+  const [projDod,      setProjDod]      = useState('')
+  const [savingProj,   setSavingProj]   = useState(false)
 
   useEffect(() => {
     ProjectService.getActive().then(p => {
@@ -18,6 +23,28 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
       else TaskService.getAll().then(setTasks)
     })
   }, [])
+
+  async function createProject(e: React.FormEvent) {
+    e.preventDefault()
+    if (!projTitle.trim()) { onToast('Dê um nome ao projeto.', true); return }
+    setSavingProj(true)
+    try {
+      const p = await ProjectService.create({
+        title: projTitle.trim(),
+        objective: projObj.trim() || undefined,
+        definition_of_done: projDod.trim() || undefined,
+      })
+      setProject(p)
+      setTasks([])
+      setShowNewProj(false)
+      setProjTitle(''); setProjObj(''); setProjDod('')
+      onToast('Projeto criado. Vamos construir.')
+    } catch {
+      onToast('Erro ao criar projeto.', true)
+    } finally {
+      setSavingProj(false)
+    }
+  }
 
   const backlog    = tasks.filter(t => t.status === 'backlog')
   const inProgress = tasks.filter(t => t.status === 'in_progress')
@@ -67,8 +94,42 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
             </div>
           )}
         </div>
-        <Btn variant="primary" onClick={() => setShowForm(v => !v)}>+ Tarefa</Btn>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!project && (
+            <Btn variant="primary" onClick={() => setShowNewProj(v => !v)}>+ Novo Projeto</Btn>
+          )}
+          {project && (
+            <Btn variant="primary" onClick={() => setShowForm(v => !v)}>+ Tarefa</Btn>
+          )}
+        </div>
       </div>
+
+      {/* Formulário novo projeto */}
+      {showNewProj && !project && (
+        <Card style={{ marginBottom: 20 }}>
+          <form onSubmit={createProject} style={{ display: 'grid', gap: 12 }}>
+            <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.68rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
+              Novo Projeto
+            </div>
+            <div>
+              <label style={projLabelStyle}>Nome do Projeto *</label>
+              <input autoFocus value={projTitle} onChange={e => setProjTitle(e.target.value)} placeholder="Ex: Curso de CapCut" style={projInputStyle} />
+            </div>
+            <div>
+              <label style={projLabelStyle}>Objetivo</label>
+              <input value={projObj} onChange={e => setProjObj(e.target.value)} placeholder="O que você quer alcançar?" style={projInputStyle} />
+            </div>
+            <div>
+              <label style={projLabelStyle}>Definição de Pronto</label>
+              <input value={projDod} onChange={e => setProjDod(e.target.value)} placeholder="Como saberá que concluiu?" style={projInputStyle} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Btn type="submit" variant="primary" disabled={savingProj}>{savingProj ? 'Criando...' : 'Criar Projeto'}</Btn>
+              <Btn type="button" onClick={() => setShowNewProj(false)}>Cancelar</Btn>
+            </div>
+          </form>
+        </Card>
+      )}
 
       {/* Add task form */}
       {showForm && (
@@ -186,4 +247,25 @@ function TaskCard({ task, colType, wipCount, onMove, onDelete }: {
       </div>
     </div>
   )
+}
+
+const projLabelStyle: React.CSSProperties = {
+  display: 'block',
+  fontFamily: 'var(--f-mono)',
+  fontSize: '0.7rem',
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: 'var(--fg-muted)',
+  marginBottom: 6,
+}
+
+const projInputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--bg-raised)',
+  border: '1px solid var(--border)',
+  borderRadius: 4,
+  color: 'var(--fg)',
+  fontFamily: 'var(--f-body)',
+  fontSize: '0.88rem',
+  padding: '9px 12px',
 }

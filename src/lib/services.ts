@@ -39,6 +39,21 @@ export const ProjectService = {
     }
     await supabase!.from('projects').update({ status: 'completed', progress: 100 }).eq('id', id)
   },
+
+  async create(project: { title: string; objective?: string; definition_of_done?: string }): Promise<Project> {
+    if (USE_MOCK) {
+      const p: Project = { ...project, id: String(Date.now()), status: 'active', progress: 0, created_at: new Date().toISOString() }
+      mockProjects.push(p)
+      return p
+    }
+    const { data, error } = await supabase!
+      .from('projects')
+      .insert({ ...project, status: 'active', progress: 0 })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
 }
 
 // ── Tarefas ───────────────────────────────────────────────────────────────────
