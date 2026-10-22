@@ -313,13 +313,17 @@ export const ExecutionLogService = {
   async getRecent(limit = 10): Promise<ExecutionLog[]> {
     if (USE_MOCK) return mockLogs.slice(0, limit)
 
-    const { data } = await supabase!
-      .from('execution_logs')
-      .select('*')
-      .eq('user_id', uid())
-      .order('log_date', { ascending: false })
-      .limit(limit)
-    return data ?? []
+    const [{ data: logs }, { data: tasks }] = await Promise.all([
+      supabase!.from('execution_logs').select('*').eq('user_id', uid()).order('log_date', { ascending: false }).limit(limit),
+      supabase!.from('tasks').select('title, projects(title)').eq('status', 'completed').eq('user_id', uid()),
+    ])
+
+    if (!logs?.length) return []
+
+    const projectName = (tasks?.[0] as any)?.projects?.title ?? undefined
+    const taskTitles = (tasks ?? []).map((t: any) => t.title as string)
+
+    return logs.map(log => ({ ...log, project_name: projectName, completed_tasks: taskTitles }))
   },
 }
 

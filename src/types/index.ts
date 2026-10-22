@@ -41,6 +41,8 @@ export interface ExecutionLog {
   tasks_completed_count: number
   worked_today: boolean
   created_at: string
+  project_name?: string
+  completed_tasks?: string[]
 }
 
 export interface Stats {

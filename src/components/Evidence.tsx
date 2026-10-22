@@ -5,9 +5,10 @@ import type { ExecutionLog, Project, Stats } from '../types'
 import { Btn, formatDate } from './ui'
 
 export function Evidence({ onToast }: { onToast: (msg: string, warn?: boolean) => void }) {
-  const [stats,   setStats]   = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
-  const [logs,    setLogs]    = useState<ExecutionLog[]>([])
-  const [project, setProject] = useState<Project | null>(null)
+  const [stats,     setStats]     = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
+  const [logs,      setLogs]      = useState<ExecutionLog[]>([])
+  const [project,   setProject]   = useState<Project | null>(null)
+  const [expanded,  setExpanded]  = useState<string | null>(null)
   const [completing, setCompleting] = useState(false)
 
   useEffect(() => {
@@ -96,7 +97,7 @@ export function Evidence({ onToast }: { onToast: (msg: string, warn?: boolean) =
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              {['Data', 'Tarefas', 'Trabalhou'].map(h => (
+              {['Data', 'Projeto', 'Tarefas', 'Concluiu', 'Vitória'].map(h => (
                 <th key={h} style={{ fontFamily: 'var(--f-mono)', fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
                   {h}
                 </th>
@@ -104,25 +105,57 @@ export function Evidence({ onToast }: { onToast: (msg: string, warn?: boolean) =
             </tr>
           </thead>
           <tbody>
-            {logs.map(log => (
-              <tr key={log.id}>
-                <td style={{ fontFamily: 'var(--f-mono)', fontSize: '0.75rem', color: 'var(--fg-muted)', padding: '10px 12px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                  {formatDate(log.log_date)}
-                </td>
-                <td style={{ fontFamily: 'var(--f-mono)', fontSize: '0.82rem', padding: '10px 12px', borderBottom: '1px solid var(--border)', color: 'var(--accent)' }}>
-                  {log.tasks_completed_count}
-                </td>
-                <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: log.worked_today ? 'var(--good)' : 'var(--border)', marginRight: 6, verticalAlign: 'middle' }} />
-                  <span style={{ fontSize: '0.78rem', color: log.worked_today ? 'var(--good)' : 'var(--fg-muted)' }}>
-                    {log.worked_today ? 'Sim' : 'Não'}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {logs.map(log => {
+              const isOpen = expanded === log.id
+              return (
+                <>
+                  <tr
+                    key={log.id}
+                    onClick={() => setExpanded(isOpen ? null : log.id)}
+                    style={{ cursor: 'pointer', background: isOpen ? 'var(--bg-raised)' : 'transparent', transition: 'background 0.15s' }}
+                  >
+                    <td style={{ fontFamily: 'var(--f-mono)', fontSize: '0.75rem', color: 'var(--fg-muted)', padding: '10px 12px', borderBottom: isOpen ? 'none' : '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                      {formatDate(log.log_date)}
+                    </td>
+                    <td style={{ fontFamily: 'var(--f-body)', fontSize: '0.82rem', padding: '10px 12px', borderBottom: isOpen ? 'none' : '1px solid var(--border)', color: 'var(--fg)', fontWeight: 500 }}>
+                      {log.project_name ?? '—'}
+                    </td>
+                    <td style={{ fontFamily: 'var(--f-mono)', fontSize: '0.82rem', padding: '10px 12px', borderBottom: isOpen ? 'none' : '1px solid var(--border)', color: 'var(--accent)' }}>
+                      {log.tasks_completed_count}
+                    </td>
+                    <td style={{ padding: '10px 12px', borderBottom: isOpen ? 'none' : '1px solid var(--border)' }}>
+                      <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: log.worked_today ? 'var(--good)' : 'var(--border)', marginRight: 6, verticalAlign: 'middle' }} />
+                      <span style={{ fontSize: '0.78rem', color: log.worked_today ? 'var(--good)' : 'var(--fg-muted)' }}>
+                        {log.worked_today ? 'Sim' : 'Não'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 12px', borderBottom: isOpen ? 'none' : '1px solid var(--border)', fontSize: '1rem' }}>
+                      {log.worked_today ? '🏆' : ''}
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr key={`${log.id}-detail`}>
+                      <td colSpan={5} style={{ background: 'var(--bg-raised)', borderBottom: '1px solid var(--border)', padding: '0 12px 12px 24px' }}>
+                        {log.completed_tasks && log.completed_tasks.length > 0 ? (
+                          <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                            {log.completed_tasks.map((t, i) => (
+                              <li key={i} style={{ fontFamily: 'var(--f-body)', fontSize: '0.8rem', color: 'var(--fg-muted)', padding: '3px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ color: 'var(--good)', fontSize: '0.7rem' }}>✓</span> {t}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.72rem', color: 'var(--fg-muted)' }}>Sem detalhes de tarefas.</span>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )
+            })}
             {logs.length === 0 && (
               <tr>
-                <td colSpan={3} style={{ textAlign: 'center', color: 'var(--fg-muted)', fontSize: '0.85rem', padding: '32px 12px' }}>
+                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--fg-muted)', fontSize: '0.85rem', padding: '32px 12px' }}>
                   Nenhum registro ainda.
                 </td>
               </tr>
