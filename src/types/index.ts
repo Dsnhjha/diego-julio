@@ -71,7 +71,7 @@ export interface ReadingLog {
 export interface InvestmentGoal {
   id: string
   title: string
-  horizon: 'curto' | 'medio' | 'longo'
+  horizon: string
   target_amount: number
   current_amount: number
   status: 'active' | 'completed'
