@@ -48,3 +48,31 @@ export interface Stats {
   projects_done: number
   execution_days: number
 }
+
+export interface Book {
+  id: string
+  title: string
+  author?: string
+  total_pages: number
+  pages_read: number
+  status: 'active' | 'completed'
+  created_at: string
+}
+
+export interface ReadingLog {
+  id: string
+  book_id: string
+  log_date: string
+  pages_read: number
+  created_at: string
+}
+
+export interface InvestmentGoal {
+  id: string
+  title: string
+  horizon: 'curto' | 'medio' | 'longo'
+  target_amount: number
+  current_amount: number
+  status: 'active' | 'completed'
+  created_at: string
+}

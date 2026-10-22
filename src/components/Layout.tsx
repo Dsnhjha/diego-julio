@@ -8,11 +8,13 @@ interface LayoutProps {
 }
 
 const TABS = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'kanban',    label: 'Kanban'    },
-  { id: 'identity',  label: 'Identidade'},
-  { id: 'parking',   label: 'Estacionamento' },
-  { id: 'evidence',  label: 'Evidências'},
+  { id: 'dashboard',   label: 'Dashboard'       },
+  { id: 'kanban',      label: 'Kanban'           },
+  { id: 'identity',    label: 'Identidade'       },
+  { id: 'books',       label: 'Livros'           },
+  { id: 'investments', label: 'Investimentos'    },
+  { id: 'parking',     label: 'Estacionamento'   },
+  { id: 'evidence',    label: 'Evidências'       },
 ]
 
 export function Layout({ streak, activeTab, onTabChange, children }: LayoutProps) {

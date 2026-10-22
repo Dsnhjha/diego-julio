@@ -1,4 +1,4 @@
-import type { ExecutionLog, IdentityPhrase, IdeaParking, Project, Stats, Task } from '../types'
+import type { Book, ExecutionLog, IdentityPhrase, IdeaParking, InvestmentGoal, Project, Stats, Task } from '../types'
 
 export const mockProjects: Project[] = [
   {
@@ -45,3 +45,11 @@ export const mockStats: Stats = {
 }
 
 export const mockStreak = 1
+
+export const mockBooks: Book[] = [
+  { id: '1', title: 'Hábitos Atômicos', author: 'James Clear', total_pages: 320, pages_read: 80, status: 'active', created_at: new Date().toISOString() },
+]
+
+export const mockInvestments: InvestmentGoal[] = [
+  { id: '1', title: 'Reserva de Emergência', horizon: 'curto', target_amount: 10000, current_amount: 3500, status: 'active', created_at: new Date().toISOString() },
+]

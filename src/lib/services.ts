@@ -1,8 +1,8 @@
 import { supabase } from './supabase'
 import {
-  mockIdeas, mockLogs, mockPhrases, mockProjects, mockStats, mockStreak, mockTasks,
+  mockBooks, mockIdeas, mockInvestments, mockLogs, mockPhrases, mockProjects, mockStats, mockStreak, mockTasks,
 } from './mockData'
-import type { ExecutionLog, IdentityPhrase, IdeaParking, Project, Stats, Task } from '../types'
+import type { Book, ExecutionLog, IdentityPhrase, IdeaParking, InvestmentGoal, Project, ReadingLog, Stats, Task } from '../types'
 
 const USE_MOCK = supabase === null
 
@@ -309,5 +309,105 @@ export const ExecutionLogService = {
       .order('log_date', { ascending: false })
       .limit(limit)
     return data ?? []
+  },
+}
+
+// ── Livros ────────────────────────────────────────────────────────────────────
+
+let _mockBooks = mockBooks.map(b => ({ ...b }))
+
+export const BookService = {
+  async getActive(): Promise<Book | null> {
+    if (USE_MOCK) return _mockBooks.find(b => b.status === 'active') ?? null
+    const { data } = await supabase!.from('books').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(1).single()
+    return data ?? null
+  },
+
+  async getAll(): Promise<Book[]> {
+    if (USE_MOCK) return _mockBooks
+    const { data } = await supabase!.from('books').select('*').order('created_at', { ascending: false })
+    return data ?? []
+  },
+
+  async create(book: Omit<Book, 'id' | 'created_at' | 'pages_read' | 'status'>): Promise<Book> {
+    if (USE_MOCK) {
+      const b: Book = { ...book, id: String(Date.now()), pages_read: 0, status: 'active', created_at: new Date().toISOString() }
+      _mockBooks.push(b)
+      return b
+    }
+    const { data, error } = await supabase!.from('books').insert({ ...book, pages_read: 0, status: 'active' }).select().single()
+    if (error) throw error
+    return data
+  },
+
+  async logReading(bookId: string, pagesRead: number): Promise<void> {
+    if (USE_MOCK) {
+      const b = _mockBooks.find(b => b.id === bookId)
+      if (b) b.pages_read = Math.min(b.total_pages, b.pages_read + pagesRead)
+      return
+    }
+    const today = localDateStr()
+    const { data: existing } = await supabase!.from('reading_logs').select('id, pages_read').eq('book_id', bookId).eq('log_date', today).single()
+    if (existing) {
+      await supabase!.from('reading_logs').update({ pages_read: existing.pages_read + pagesRead }).eq('id', existing.id)
+    } else {
+      await supabase!.from('reading_logs').insert({ book_id: bookId, log_date: today, pages_read: pagesRead })
+    }
+    // Atualiza total de páginas lidas no livro
+    const { data: logs } = await supabase!.from('reading_logs').select('pages_read').eq('book_id', bookId)
+    const total = (logs ?? []).reduce((sum, l) => sum + l.pages_read, 0)
+    const { data: book } = await supabase!.from('books').select('total_pages').eq('id', bookId).single()
+    const pages_read = Math.min(total, book?.total_pages ?? total)
+    await supabase!.from('books').update({ pages_read }).eq('id', bookId)
+    if (book && pages_read >= book.total_pages) {
+      await supabase!.from('books').update({ status: 'completed' }).eq('id', bookId)
+    }
+  },
+
+  async getRecentLogs(bookId: string, limit = 7): Promise<ReadingLog[]> {
+    if (USE_MOCK) return []
+    const { data } = await supabase!.from('reading_logs').select('*').eq('book_id', bookId).order('log_date', { ascending: false }).limit(limit)
+    return data ?? []
+  },
+}
+
+// ── Investimentos ─────────────────────────────────────────────────────────────
+
+let _mockInvestments = mockInvestments.map(i => ({ ...i }))
+
+export const InvestmentService = {
+  async getAll(): Promise<InvestmentGoal[]> {
+    if (USE_MOCK) return _mockInvestments
+    const { data } = await supabase!.from('investment_goals').select('*').order('created_at', { ascending: true })
+    return data ?? []
+  },
+
+  async create(goal: Omit<InvestmentGoal, 'id' | 'created_at' | 'current_amount' | 'status'>): Promise<InvestmentGoal> {
+    if (USE_MOCK) {
+      const g: InvestmentGoal = { ...goal, id: String(Date.now()), current_amount: 0, status: 'active', created_at: new Date().toISOString() }
+      _mockInvestments.push(g)
+      return g
+    }
+    const { data, error } = await supabase!.from('investment_goals').insert({ ...goal, current_amount: 0, status: 'active' }).select().single()
+    if (error) throw error
+    return data
+  },
+
+  async addContribution(id: string, amount: number): Promise<InvestmentGoal> {
+    if (USE_MOCK) {
+      const g = _mockInvestments.find(g => g.id === id)
+      if (g) {
+        g.current_amount = Math.min(g.target_amount, g.current_amount + amount)
+        if (g.current_amount >= g.target_amount) g.status = 'completed'
+      }
+      return g!
+    }
+    const { data: goal } = await supabase!.from('investment_goals').select('current_amount, target_amount').eq('id', id).single()
+    if (!goal) throw new Error('Meta não encontrada')
+    const current_amount = Math.min(goal.target_amount, goal.current_amount + amount)
+    const status = current_amount >= goal.target_amount ? 'completed' : 'active'
+    const { data, error } = await supabase!.from('investment_goals').update({ current_amount, status }).eq('id', id).select().single()
+    if (error) throw error
+    return data
   },
 }
