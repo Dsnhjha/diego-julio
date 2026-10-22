@@ -12,7 +12,6 @@ function localDateStr() {
 }
 
 function uid() { return getUserId() }
-function hasUser() { try { getUserId(); return true } catch { return false } }
 
 // ── Projetos ──────────────────────────────────────────────────────────────────
 
