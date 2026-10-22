@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { InvestmentService } from '../lib/services'
 import type { InvestmentGoal } from '../types'
-import { Btn, Card, CardLabel } from './ui'
+import { Btn, Card } from './ui'
 
 const horizonLabel = { curto: 'Curto Prazo', medio: 'Médio Prazo', longo: 'Longo Prazo' }
 const horizonColor = { curto: 'var(--good)', medio: 'var(--accent)', longo: 'var(--fg-muted)' }
