@@ -50,7 +50,7 @@ export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) =>
               <input id="park-date" type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
             </Field>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <Btn variant="primary" style={{ width: '100%' }}>Estacionar ideia</Btn>
+              <Btn type="submit" variant="primary" style={{ width: '100%' }}>Estacionar ideia</Btn>
             </div>
           </div>
         </div>
