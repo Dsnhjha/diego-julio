@@ -147,7 +147,9 @@ export const TaskService = {
       return
     }
 
-    await supabase!.from('tasks').update({ status }).eq('id', id)
+    const updateData: Record<string, unknown> = { status }
+    if (status === 'completed') updateData.completed_at = localDateStr()
+    await supabase!.from('tasks').update(updateData).eq('id', id)
 
     // Recalcula progresso do projeto
     const task = await supabase!.from('tasks').select('project_id').eq('id', id).single()
@@ -315,15 +317,17 @@ export const ExecutionLogService = {
 
     const [{ data: logs }, { data: tasks }] = await Promise.all([
       supabase!.from('execution_logs').select('*').eq('user_id', uid()).order('log_date', { ascending: false }).limit(limit),
-      supabase!.from('tasks').select('title, projects(title)').eq('status', 'completed').eq('user_id', uid()),
+      supabase!.from('tasks').select('title, completed_at, projects(title)').eq('status', 'completed').eq('user_id', uid()),
     ])
 
     if (!logs?.length) return []
 
-    const projectName = (tasks?.[0] as any)?.projects?.title ?? undefined
-    const taskTitles = (tasks ?? []).map((t: any) => t.title as string)
-
-    return logs.map(log => ({ ...log, project_name: projectName, completed_tasks: taskTitles }))
+    return logs.map(log => {
+      const dayTasks = (tasks ?? []).filter((t: any) => t.completed_at === log.log_date)
+      const projectName = (dayTasks[0] as any)?.projects?.title ?? undefined
+      const taskTitles = dayTasks.map((t: any) => t.title as string)
+      return { ...log, project_name: projectName, completed_tasks: taskTitles }
+    })
   },
 }
 
