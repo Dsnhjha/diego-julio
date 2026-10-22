@@ -4,10 +4,11 @@ import type { IdeaParking } from '../types'
 import { Btn, daysUntil, formatDate } from './ui'
 
 export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) => void }) {
-  const [ideas, setIdeas]     = useState<IdeaParking[]>([])
-  const [title, setTitle]     = useState('')
-  const [desc,  setDesc]      = useState('')
-  const [date,  setDate]      = useState('')
+  const [ideas,    setIdeas]    = useState<IdeaParking[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [title,    setTitle]    = useState('')
+  const [desc,     setDesc]     = useState('')
+  const [date,     setDate]     = useState('')
 
   useEffect(() => {
     IdeaParkingService.getAll().then(setIdeas)
@@ -19,6 +20,7 @@ export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) =>
     const idea = await IdeaParkingService.create({ title: title.trim(), description: desc.trim(), unlock_date: date })
     setIdeas(prev => [...prev, idea])
     setTitle(''); setDesc(''); setDate('')
+    setShowForm(false)
     onToast('Ideia estacionada. Foco no projeto atual.')
   }
 
@@ -26,15 +28,18 @@ export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) =>
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'var(--f-display)', fontSize: '1.4rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg)', margin: '0 0 8px', textWrap: 'balance' }}>
-        Estacionamento de Ideias
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 8, flexWrap: 'wrap' }}>
+        <h1 style={{ fontFamily: 'var(--f-display)', fontSize: '1.4rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg)', margin: 0, textWrap: 'balance' }}>
+          Estacionamento de Ideias
+        </h1>
+        <Btn variant="primary" onClick={() => setShowForm(v => !v)}>+ Ideia</Btn>
+      </div>
       <p style={{ color: 'var(--fg-muted)', fontSize: '0.85rem', marginBottom: 20, maxWidth: '55ch', lineHeight: 1.7 }}>
         Ideias novas ficam aqui, trancadas até a data definida. Nada compete com o projeto atual.
       </p>
 
       {/* Formulário */}
-      <form onSubmit={submit} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6, padding: 20, marginBottom: 24 }}>
+      {showForm && <form onSubmit={submit} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6, padding: 20, marginBottom: 24 }}>
         <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.68rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 14 }}>
           Registrar nova ideia
         </div>
@@ -54,7 +59,7 @@ export function Parking({ onToast }: { onToast: (msg: string, warn?: boolean) =>
             </div>
           </div>
         </div>
-      </form>
+      </form>}
 
       {/* Lista */}
       <div style={{ display: 'grid', gap: 12 }}>
