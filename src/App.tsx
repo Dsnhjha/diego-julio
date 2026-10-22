@@ -57,7 +57,7 @@ export default function App() {
       </SignedOut>
       <SignedIn>
         <Layout streak={streak} activeTab={tab} onTabChange={handleTabChange}>
-          {tab === 'dashboard'   && <Dashboard />}
+          {tab === 'dashboard'   && user?.id && <Dashboard userId={user.id} />}
           {tab === 'kanban'      && <Kanban       onToast={showToast} />}
           {tab === 'identity'    && <Identity     onToast={showToast} />}
           {tab === 'parking'     && <Parking      onToast={showToast} />}

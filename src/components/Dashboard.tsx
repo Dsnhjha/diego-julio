@@ -3,13 +3,14 @@ import { ExecutionLogService, ProjectService, TaskService } from '../lib/service
 import type { Project, Stats } from '../types'
 import { Card, CardLabel } from './ui'
 
-export function Dashboard() {
+export function Dashboard({ userId }: { userId: string }) {
   const [project, setProject] = useState<Project | null>(null)
   const [streak,  setStreak]  = useState(0)
   const [stats,   setStats]   = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
   const [pct,     setPct]     = useState(0)
 
   useEffect(() => {
+    if (!userId) return
     Promise.all([
       ProjectService.getActive(),
       ExecutionLogService.getStreak(),
@@ -28,7 +29,7 @@ export function Dashboard() {
         }
       }
     })
-  }, [])
+  }, [userId])
 
   const filled = Math.round(pct / 10)
   const blocks = '█'.repeat(filled) + '░'.repeat(10 - filled)
