@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { sendCompletionEmail } from '../lib/emailService'
 import { BookService } from '../lib/services'
 import type { Book } from '../types'
 import { Btn, Card, CardLabel } from './ui'
@@ -48,7 +49,12 @@ export function Books({ onToast }: { onToast: (msg: string, warn?: boolean) => v
       setBooks(prev => prev.map(b => b.id === active.id ? updated : b))
       setPages('')
       setShowLog(null)
-      onToast(updated.pages_read >= active.total_pages ? 'Livro concluído! 📚' : `+${n} páginas registradas.`)
+      if (updated.pages_read >= active.total_pages) {
+        onToast('Livro concluído! 📚')
+        sendCompletionEmail('book', active.title, `${active.total_pages} páginas lidas no total.`)
+      } else {
+        onToast(`+${n} páginas registradas.`)
+      }
     } catch { onToast('Erro ao registrar.', true) }
     finally { setSaving(false) }
   }

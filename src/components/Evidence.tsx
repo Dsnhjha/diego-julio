@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { sendCompletionEmail } from '../lib/emailService'
 import { ExecutionLogService, ProjectService } from '../lib/services'
 import type { ExecutionLog, Project, Stats } from '../types'
 import { Btn, formatDate } from './ui'
@@ -24,6 +25,7 @@ export function Evidence({ onToast }: { onToast: (msg: string, warn?: boolean) =
     setProject(prev => prev ? { ...prev, status: 'completed' } : prev)
     setStats(prev => ({ ...prev, projects_done: prev.projects_done + 1 }))
     onToast('Projeto concluído. 🏆 Vitória registrada.')
+    sendCompletionEmail('project', project.title)
     setCompleting(false)
   }
 

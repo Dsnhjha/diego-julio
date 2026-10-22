@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { sendCompletionEmail } from '../lib/emailService'
 import { InvestmentService } from '../lib/services'
 import type { InvestmentGoal } from '../types'
 import { Btn, Card } from './ui'
@@ -49,7 +50,12 @@ export function Investments({ onToast }: { onToast: (msg: string, warn?: boolean
       setGoals(prev => prev.map(g => g.id === id ? updated : g))
       setAddAmount('')
       setShowAdd(null)
-      onToast(updated.status === 'completed' ? 'Meta atingida! 🏆' : `${formatBRL(amount)} aportados.`)
+      if (updated.status === 'completed') {
+        onToast('Meta atingida! 🏆')
+        sendCompletionEmail('investment', updated.title, `${formatBRL(updated.target_amount)} conquistados.`)
+      } else {
+        onToast(`${formatBRL(amount)} aportados.`)
+      }
     } catch { onToast('Erro ao registrar.', true) }
     finally { setSaving(false) }
   }
