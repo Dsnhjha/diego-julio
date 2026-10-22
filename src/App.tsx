@@ -1,3 +1,4 @@
+import { RedirectToSignIn, SignedIn, SignedOut } from '@clerk/clerk-react'
 import { useEffect, useState } from 'react'
 import { Books }       from './components/Books'
 import { Dashboard }   from './components/Dashboard'
@@ -43,16 +44,23 @@ export default function App() {
   }
 
   return (
-    <Layout streak={streak} activeTab={tab} onTabChange={handleTabChange}>
-      {tab === 'dashboard'   && <Dashboard />}
-      {tab === 'kanban'      && <Kanban       onToast={showToast} />}
-      {tab === 'identity'    && <Identity     onToast={showToast} />}
-      {tab === 'parking'     && <Parking      onToast={showToast} />}
-      {tab === 'evidence'    && <Evidence     onToast={showToast} />}
-      {tab === 'books'       && <Books        onToast={showToast} />}
-      {tab === 'investments' && <Investments  onToast={showToast} />}
+    <>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+      <SignedIn>
+        <Layout streak={streak} activeTab={tab} onTabChange={handleTabChange}>
+          {tab === 'dashboard'   && <Dashboard />}
+          {tab === 'kanban'      && <Kanban       onToast={showToast} />}
+          {tab === 'identity'    && <Identity     onToast={showToast} />}
+          {tab === 'parking'     && <Parking      onToast={showToast} />}
+          {tab === 'evidence'    && <Evidence     onToast={showToast} />}
+          {tab === 'books'       && <Books        onToast={showToast} />}
+          {tab === 'investments' && <Investments  onToast={showToast} />}
 
-      {toast && <Toast key={toast.key} message={toast.message} warn={toast.warn} />}
-    </Layout>
+          {toast && <Toast key={toast.key} message={toast.message} warn={toast.warn} />}
+        </Layout>
+      </SignedIn>
+    </>
   )
 }
