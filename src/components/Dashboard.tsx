@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { BookService, ExecutionLogService, ProjectService, TaskService } from '../lib/services'
-import type { Book, Project, Stats } from '../types'
+import { BookService, ExecutionLogService, InvestmentService, ProjectService, TaskService } from '../lib/services'
+import type { Book, InvestmentGoal, Project, Stats } from '../types'
 import { Card, CardLabel } from './ui'
 
 export function Dashboard({ userId }: { userId: string }) {
-  const [project, setProject] = useState<Project | null>(null)
-  const [book,    setBook]    = useState<Book | null>(null)
-  const [streak,  setStreak]  = useState(0)
-  const [stats,   setStats]   = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
-  const [pct,     setPct]     = useState(0)
+  const [project,     setProject]     = useState<Project | null>(null)
+  const [book,        setBook]        = useState<Book | null>(null)
+  const [investments, setInvestments] = useState<InvestmentGoal[]>([])
+  const [streak,      setStreak]      = useState(0)
+  const [stats,       setStats]       = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
+  const [pct,         setPct]         = useState(0)
 
   useEffect(() => {
     if (!userId) return
@@ -17,11 +18,13 @@ export function Dashboard({ userId }: { userId: string }) {
       ExecutionLogService.getStreak(),
       ExecutionLogService.getStats(),
       BookService.getActive(),
-    ]).then(async ([p, s, st, b]) => {
+      InvestmentService.getAll(),
+    ]).then(async ([p, s, st, b, inv]) => {
       setProject(p)
       setStreak(s)
       setStats(st)
       setBook(b)
+      setInvestments((inv as InvestmentGoal[]).filter(g => g.status === 'active'))
       if (p) {
         const tasks = await TaskService.getByProject(p.id)
         if (tasks.length > 0) {
@@ -106,6 +109,35 @@ export function Dashboard({ userId }: { userId: string }) {
             </Card>
           )
         })()}
+
+        {/* Investimentos ativos */}
+        {investments.length > 0 && (
+          <Card style={{ gridColumn: '1 / -1' }}>
+            <CardLabel>Metas de Investimento</CardLabel>
+            <div style={{ display: 'grid', gap: 14 }}>
+              {investments.map(goal => {
+                const pct = goal.target_amount > 0 ? Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) : 0
+                return (
+                  <div key={goal.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <div>
+                        <span style={{ fontFamily: 'var(--f-display)', fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{goal.title}</span>
+                        <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.65rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 3, padding: '1px 5px', marginLeft: 8 }}>{goal.horizon}</span>
+                      </div>
+                      <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.9rem', fontWeight: 500, color: 'var(--accent)' }}>{pct}%</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--fg-muted)', fontFamily: 'var(--f-mono)', marginBottom: 4 }}>
+                      <span>{goal.current_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / {goal.target_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    </div>
+                    <div style={{ height: 7, background: 'var(--bg-raised)', borderRadius: 2, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: 'var(--accent)', width: `${pct}%`, borderRadius: 2, transition: 'width 0.6s ease' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+        )}
 
         {/* Streak */}
         <Card>
