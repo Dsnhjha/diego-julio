@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getUserId } from './userContext'
 import {
   mockBooks, mockIdeas, mockInvestments, mockLogs, mockPhrases, mockProjects, mockStats, mockStreak, mockTasks,
 } from './mockData'
@@ -10,6 +11,8 @@ function localDateStr() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 }
 
+function uid() { return getUserId() }
+
 // ── Projetos ──────────────────────────────────────────────────────────────────
 
 export const ProjectService = {
@@ -20,14 +23,15 @@ export const ProjectService = {
       .from('projects')
       .select('*')
       .eq('status', 'active')
-      .single()
+      .eq('user_id', uid())
+      .maybeSingle()
     return data
   },
 
   async getAll(): Promise<Project[]> {
     if (USE_MOCK) return mockProjects
 
-    const { data } = await supabase!.from('projects').select('*')
+    const { data } = await supabase!.from('projects').select('*').eq('user_id', uid())
     return data ?? []
   },
 
@@ -37,7 +41,7 @@ export const ProjectService = {
       if (p) p.status = 'completed'
       return
     }
-    await supabase!.from('projects').update({ status: 'completed', progress: 100 }).eq('id', id)
+    await supabase!.from('projects').update({ status: 'completed', progress: 100 }).eq('id', id).eq('user_id', uid())
   },
 
   async create(project: { title: string; objective?: string; definition_of_done?: string }): Promise<Project> {
@@ -48,7 +52,7 @@ export const ProjectService = {
     }
     const { data, error } = await supabase!
       .from('projects')
-      .insert({ ...project, status: 'active', progress: 0 })
+      .insert({ ...project, status: 'active', progress: 0, user_id: uid() })
       .select()
       .single()
     if (error) throw error
@@ -68,6 +72,7 @@ export const TaskService = {
       .from('tasks')
       .select('*')
       .eq('project_id', projectId)
+      .eq('user_id', uid())
       .order('created_at', { ascending: true })
     return data ?? []
   },
@@ -78,6 +83,7 @@ export const TaskService = {
     const { data } = await supabase!
       .from('tasks')
       .select('*')
+      .eq('user_id', uid())
       .order('created_at', { ascending: true })
     return data ?? []
   },
@@ -89,7 +95,7 @@ export const TaskService = {
       return newTask
     }
 
-    const { data, error } = await supabase!.from('tasks').insert(task).select().single()
+    const { data, error } = await supabase!.from('tasks').insert({ ...task, user_id: uid() }).select().single()
     if (error) throw error
     return data
   },
@@ -122,7 +128,8 @@ export const TaskService = {
         .from('execution_logs')
         .select('id, tasks_completed_count')
         .eq('log_date', today)
-        .single()
+        .eq('user_id', uid())
+        .maybeSingle()
       if (log && log.tasks_completed_count > 1) {
         await supabase!.from('execution_logs')
           .update({ tasks_completed_count: log.tasks_completed_count - 1 })
@@ -159,7 +166,8 @@ export const TaskService = {
         .from('execution_logs')
         .select('id, tasks_completed_count')
         .eq('log_date', today)
-        .single()
+        .eq('user_id', uid())
+        .maybeSingle()
 
       if (existing) {
         await supabase!
@@ -169,7 +177,7 @@ export const TaskService = {
       } else {
         await supabase!
           .from('execution_logs')
-          .insert({ log_date: today, tasks_completed_count: 1, worked_today: true })
+          .insert({ log_date: today, tasks_completed_count: 1, worked_today: true, user_id: uid() })
       }
     }
   },
@@ -186,6 +194,7 @@ export const IdeaParkingService = {
     const { data } = await supabase!
       .from('idea_parking')
       .select('*')
+      .eq('user_id', uid())
       .order('unlock_date', { ascending: true })
     return data ?? []
   },
@@ -197,7 +206,7 @@ export const IdeaParkingService = {
       return newIdea
     }
 
-    const { data, error } = await supabase!.from('idea_parking').insert(idea).select().single()
+    const { data, error } = await supabase!.from('idea_parking').insert({ ...idea, user_id: uid() }).select().single()
     if (error) throw error
     return data
   },
@@ -211,7 +220,7 @@ export const IdentityService = {
   async getPhrases(): Promise<IdentityPhrase[]> {
     if (USE_MOCK) return _mockPhrases
 
-    const { data } = await supabase!.from('identity_phrases').select('*')
+    const { data } = await supabase!.from('identity_phrases').select('*').eq('user_id', uid())
     return data ?? []
   },
 
@@ -222,7 +231,7 @@ export const IdentityService = {
       return newPhrase
     }
 
-    const { data, error } = await supabase!.from('identity_phrases').insert(phrase).select().single()
+    const { data, error } = await supabase!.from('identity_phrases').insert({ ...phrase, user_id: uid() }).select().single()
     if (error) throw error
     return data
   },
@@ -265,6 +274,7 @@ export const ExecutionLogService = {
       .from('execution_logs')
       .select('log_date')
       .eq('worked_today', true)
+      .eq('user_id', uid())
       .order('log_date', { ascending: false })
       .limit(60)
     if (!data) return 0
@@ -288,9 +298,9 @@ export const ExecutionLogService = {
     if (USE_MOCK) return mockStats
 
     const [tasks, projects, logs] = await Promise.all([
-      supabase!.from('tasks').select('id', { count: 'exact' }).eq('status', 'completed'),
-      supabase!.from('projects').select('id', { count: 'exact' }).eq('status', 'completed'),
-      supabase!.from('execution_logs').select('log_date').eq('worked_today', true),
+      supabase!.from('tasks').select('id', { count: 'exact' }).eq('status', 'completed').eq('user_id', uid()),
+      supabase!.from('projects').select('id', { count: 'exact' }).eq('status', 'completed').eq('user_id', uid()),
+      supabase!.from('execution_logs').select('log_date').eq('worked_today', true).eq('user_id', uid()),
     ])
 
     return {
@@ -306,6 +316,7 @@ export const ExecutionLogService = {
     const { data } = await supabase!
       .from('execution_logs')
       .select('*')
+      .eq('user_id', uid())
       .order('log_date', { ascending: false })
       .limit(limit)
     return data ?? []
@@ -319,13 +330,13 @@ let _mockBooks = mockBooks.map(b => ({ ...b }))
 export const BookService = {
   async getActive(): Promise<Book | null> {
     if (USE_MOCK) return _mockBooks.find(b => b.status === 'active') ?? null
-    const { data } = await supabase!.from('books').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(1).single()
+    const { data } = await supabase!.from('books').select('*').eq('status', 'active').eq('user_id', uid()).order('created_at', { ascending: false }).limit(1).maybeSingle()
     return data ?? null
   },
 
   async getAll(): Promise<Book[]> {
     if (USE_MOCK) return _mockBooks
-    const { data } = await supabase!.from('books').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase!.from('books').select('*').eq('user_id', uid()).order('created_at', { ascending: false })
     return data ?? []
   },
 
@@ -335,7 +346,7 @@ export const BookService = {
       _mockBooks.push(b)
       return b
     }
-    const { data, error } = await supabase!.from('books').insert({ ...book, pages_read: 0, status: 'active' }).select().single()
+    const { data, error } = await supabase!.from('books').insert({ ...book, pages_read: 0, status: 'active', user_id: uid() }).select().single()
     if (error) throw error
     return data
   },
@@ -351,7 +362,7 @@ export const BookService = {
     if (existing) {
       await supabase!.from('reading_logs').update({ pages_read: existing.pages_read + pagesRead }).eq('id', existing.id)
     } else {
-      await supabase!.from('reading_logs').insert({ book_id: bookId, log_date: today, pages_read: pagesRead })
+      await supabase!.from('reading_logs').insert({ book_id: bookId, log_date: today, pages_read: pagesRead, user_id: uid() })
     }
     // Atualiza total de páginas lidas no livro
     const { data: logs } = await supabase!.from('reading_logs').select('pages_read').eq('book_id', bookId)
@@ -378,7 +389,7 @@ let _mockInvestments = mockInvestments.map(i => ({ ...i }))
 export const InvestmentService = {
   async getAll(): Promise<InvestmentGoal[]> {
     if (USE_MOCK) return _mockInvestments
-    const { data } = await supabase!.from('investment_goals').select('*').order('created_at', { ascending: true })
+    const { data } = await supabase!.from('investment_goals').select('*').eq('user_id', uid()).order('created_at', { ascending: true })
     return data ?? []
   },
 
@@ -388,7 +399,7 @@ export const InvestmentService = {
       _mockInvestments.push(g)
       return g
     }
-    const { data, error } = await supabase!.from('investment_goals').insert({ ...goal, current_amount: 0, status: 'active' }).select().single()
+    const { data, error } = await supabase!.from('investment_goals').insert({ ...goal, current_amount: 0, status: 'active', user_id: uid() }).select().single()
     if (error) throw error
     return data
   },

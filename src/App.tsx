@@ -1,5 +1,6 @@
-import { RedirectToSignIn, SignedIn, SignedOut } from '@clerk/clerk-react'
+import { RedirectToSignIn, SignedIn, SignedOut, useUser } from '@clerk/clerk-react'
 import { useEffect, useState } from 'react'
+import { setUserId } from './lib/userContext'
 import { Books }       from './components/Books'
 import { Dashboard }   from './components/Dashboard'
 import { Evidence }    from './components/Evidence'
@@ -20,18 +21,24 @@ interface ToastState {
 }
 
 export default function App() {
+  const { user } = useUser()
   const [tab,    setTab]    = useState<Tab>('dashboard')
   const [streak, setStreak] = useState(0)
   const [toast,  setToast]  = useState<ToastState | null>(null)
 
   useEffect(() => {
+    setUserId(user?.id ?? null)
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return
     ExecutionLogService.getStreak().then(setStreak)
 
     try {
       const saved = localStorage.getItem('dj_tab') as Tab | null
       if (saved) setTab(saved)
     } catch { /* sem localStorage */ }
-  }, [])
+  }, [user?.id])
 
   function showToast(message: string, warn = false) {
     setToast({ message, warn, key: Date.now() })
