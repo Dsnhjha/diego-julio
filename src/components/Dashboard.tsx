@@ -4,41 +4,40 @@ import type { Book, InvestmentGoal, Project, Stats } from '../types'
 import { Card, CardLabel } from './ui'
 
 export function Dashboard({ userId }: { userId: string }) {
-  const [project,     setProject]     = useState<Project | null>(null)
+  const [projects,    setProjects]    = useState<Project[]>([])
+  const [projectPcts, setProjectPcts] = useState<Record<string, number>>({})
   const [book,        setBook]        = useState<Book | null>(null)
   const [investments, setInvestments] = useState<InvestmentGoal[]>([])
   const [streak,      setStreak]      = useState(0)
   const [stats,       setStats]       = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
-  const [pct,         setPct]         = useState(0)
 
   useEffect(() => {
     if (!userId) return
     Promise.all([
-      ProjectService.getActive(),
+      ProjectService.getActiveAll(),
       ExecutionLogService.getStreak(),
       ExecutionLogService.getStats(),
       BookService.getActive(),
       InvestmentService.getAll(),
-    ]).then(async ([p, s, st, b, inv]) => {
-      setProject(p)
+    ]).then(async ([ps, s, st, b, inv]) => {
+      setProjects(ps as Project[])
       setStreak(s)
       setStats(st)
       setBook(b)
       setInvestments((inv as InvestmentGoal[]).filter(g => g.status === 'active'))
-      if (p) {
+      const pcts: Record<string, number> = {}
+      await Promise.all((ps as Project[]).map(async p => {
         const tasks = await TaskService.getByProject(p.id)
         if (tasks.length > 0) {
           const done = tasks.filter(t => t.status === 'completed').length
-          setPct(Math.round((done / tasks.length) * 100))
+          pcts[p.id] = Math.round((done / tasks.length) * 100)
         } else {
-          setPct(p.progress)
+          pcts[p.id] = p.progress
         }
-      }
+      }))
+      setProjectPcts(pcts)
     })
   }, [userId])
-
-  const filled = Math.round(pct / 10)
-  const blocks = '█'.repeat(filled) + '░'.repeat(10 - filled)
 
   return (
     <div>
@@ -57,35 +56,41 @@ export function Dashboard({ userId }: { userId: string }) {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {/* Projeto principal */}
-        <Card style={{ gridColumn: '1 / -1' }}>
-          <CardLabel>Projeto Principal Ativo</CardLabel>
-          <div style={{ fontFamily: 'var(--f-display)', fontSize: '1.3rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            {project?.title ?? '—'}
-          </div>
-
-          {project?.objective && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', marginTop: 4 }}>
-              {project.objective}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
-            <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.85rem', color: 'var(--accent)' }}>{blocks}</span>
-            <span style={{ fontFamily: 'var(--f-mono)', fontSize: '1.2rem', fontWeight: 500, color: 'var(--accent)' }}>{pct}%</span>
-          </div>
-
-          <div style={{ height: 10, background: 'var(--bg-raised)', borderRadius: 2, border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 10 }}>
-            <div style={{ height: '100%', background: 'var(--accent)', width: `${pct}%`, borderRadius: 2, transition: 'width 0.6s ease' }} />
-          </div>
-
-          {project?.definition_of_done && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--fg-muted)' }}>
-              <span style={{ color: 'var(--good)' }}>⚑</span>
-              <span>{project.definition_of_done}</span>
-            </div>
-          )}
-        </Card>
+        {/* Projetos ativos */}
+        {projects.length === 0 ? (
+          <Card style={{ gridColumn: '1 / -1' }}>
+            <CardLabel>Projetos Ativos</CardLabel>
+            <div style={{ fontSize: '0.85rem', color: 'var(--fg-muted)' }}>Nenhum projeto ativo.</div>
+          </Card>
+        ) : projects.map(project => {
+          const pct = projectPcts[project.id] ?? 0
+          const filled = Math.round(pct / 10)
+          const blocks = '█'.repeat(filled) + '░'.repeat(10 - filled)
+          return (
+            <Card key={project.id} style={{ gridColumn: '1 / -1' }}>
+              <CardLabel>{projects.length > 1 ? 'Projeto Ativo' : 'Projeto Principal Ativo'}</CardLabel>
+              <div style={{ fontFamily: 'var(--f-display)', fontSize: '1.3rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                {project.title}
+              </div>
+              {project.objective && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', marginTop: 4 }}>{project.objective}</div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
+                <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.85rem', color: 'var(--accent)' }}>{blocks}</span>
+                <span style={{ fontFamily: 'var(--f-mono)', fontSize: '1.2rem', fontWeight: 500, color: 'var(--accent)' }}>{pct}%</span>
+              </div>
+              <div style={{ height: 10, background: 'var(--bg-raised)', borderRadius: 2, border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 10 }}>
+                <div style={{ height: '100%', background: 'var(--accent)', width: `${pct}%`, borderRadius: 2, transition: 'width 0.6s ease' }} />
+              </div>
+              {project.definition_of_done && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--fg-muted)' }}>
+                  <span style={{ color: 'var(--good)' }}>⚑</span>
+                  <span>{project.definition_of_done}</span>
+                </div>
+              )}
+            </Card>
+          )
+        })}
 
         {/* Livro atual */}
         {book && (() => {

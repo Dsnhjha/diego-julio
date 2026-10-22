@@ -5,29 +5,28 @@ import type { ExecutionLog, Project, Stats } from '../types'
 import { Btn, formatDate } from './ui'
 
 export function Evidence({ onToast }: { onToast: (msg: string, warn?: boolean) => void }) {
-  const [stats,     setStats]     = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
-  const [logs,      setLogs]      = useState<ExecutionLog[]>([])
-  const [project,   setProject]   = useState<Project | null>(null)
-  const [expanded,  setExpanded]  = useState<string | null>(null)
-  const [completing, setCompleting] = useState(false)
+  const [stats,      setStats]      = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
+  const [logs,       setLogs]       = useState<ExecutionLog[]>([])
+  const [projects,   setProjects]   = useState<Project[]>([])
+  const [completing, setCompleting] = useState<string | null>(null)
+  const [expanded,   setExpanded]   = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
       ExecutionLogService.getStats(),
       ExecutionLogService.getRecent(10),
-      ProjectService.getActive(),
-    ]).then(([s, l, p]) => { setStats(s); setLogs(l); setProject(p) })
+      ProjectService.getActiveAll(),
+    ]).then(([s, l, ps]) => { setStats(s); setLogs(l); setProjects(ps as Project[]) })
   }, [])
 
-  async function completeProject() {
-    if (!project) return
-    setCompleting(true)
+  async function completeProject(project: Project) {
+    setCompleting(project.id)
     await ProjectService.complete(project.id)
-    setProject(prev => prev ? { ...prev, status: 'completed' } : prev)
+    setProjects(prev => prev.filter(p => p.id !== project.id))
     setStats(prev => ({ ...prev, projects_done: prev.projects_done + 1 }))
     onToast('Projeto concluído. 🏆 Vitória registrada.')
     sendCompletionEmail('project', project.title)
-    setCompleting(false)
+    setCompleting(null)
   }
 
   const tiles = [
@@ -59,31 +58,29 @@ export function Evidence({ onToast }: { onToast: (msg: string, warn?: boolean) =
         ))}
       </div>
 
-      {/* Botão concluir projeto */}
-      {project && project.status !== 'completed' && (
-        <div style={{ marginBottom: 24, padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 4 }}>
-              Projeto Ativo
+      {/* Botões concluir projetos ativos */}
+      {projects.length > 0 && (
+        <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
+          {projects.map(project => (
+            <div key={project.id} style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 4 }}>
+                  Projeto Ativo
+                </div>
+                <div style={{ fontFamily: 'var(--f-display)', fontSize: '1rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--fg)' }}>
+                  {project.title}
+                </div>
+              </div>
+              <Btn
+                variant="good"
+                disabled={completing === project.id}
+                onClick={() => completeProject(project)}
+                style={{ fontSize: '0.8rem', padding: '8px 18px', whiteSpace: 'nowrap' }}
+              >
+                {completing === project.id ? 'Salvando...' : '🏆 Concluir Projeto'}
+              </Btn>
             </div>
-            <div style={{ fontFamily: 'var(--f-display)', fontSize: '1rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--fg)' }}>
-              {project.title}
-            </div>
-          </div>
-          <Btn
-            variant="good"
-            disabled={completing}
-            onClick={completeProject}
-            style={{ fontSize: '0.8rem', padding: '8px 18px', whiteSpace: 'nowrap' }}
-          >
-            {completing ? 'Salvando...' : '🏆 Concluir Projeto'}
-          </Btn>
-        </div>
-      )}
-
-      {project?.status === 'completed' && (
-        <div style={{ marginBottom: 24, padding: '12px 20px', background: 'var(--good-lo)', border: '1px solid var(--good)', borderRadius: 6, fontFamily: 'var(--f-mono)', fontSize: '0.75rem', color: 'var(--good)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          ✓ {project.title} — Projeto Concluído
+          ))}
         </div>
       )}
 

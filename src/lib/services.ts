@@ -18,14 +18,14 @@ function uid() { return getUserId() }
 export const ProjectService = {
   async getActive(): Promise<Project | null> {
     if (USE_MOCK) return mockProjects.find(p => p.status === 'active') ?? null
-
-    const { data } = await supabase!
-      .from('projects')
-      .select('*')
-      .eq('status', 'active')
-      .eq('user_id', uid())
-      .maybeSingle()
+    const { data } = await supabase!.from('projects').select('*').eq('status', 'active').eq('user_id', uid()).maybeSingle()
     return data
+  },
+
+  async getActiveAll(): Promise<Project[]> {
+    if (USE_MOCK) return mockProjects.filter(p => p.status === 'active')
+    const { data } = await supabase!.from('projects').select('*').eq('status', 'active').eq('user_id', uid()).order('created_at', { ascending: true }).limit(2)
+    return data ?? []
   },
 
   async getAll(): Promise<Project[]> {
