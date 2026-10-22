@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { ExecutionLogService, ProjectService, TaskService } from '../lib/services'
-import type { Project, Stats } from '../types'
+import { BookService, ExecutionLogService, ProjectService, TaskService } from '../lib/services'
+import type { Book, Project, Stats } from '../types'
 import { Card, CardLabel } from './ui'
 
 export function Dashboard({ userId }: { userId: string }) {
   const [project, setProject] = useState<Project | null>(null)
+  const [book,    setBook]    = useState<Book | null>(null)
   const [streak,  setStreak]  = useState(0)
   const [stats,   setStats]   = useState<Stats>({ tasks_done: 0, projects_done: 0, execution_days: 0 })
   const [pct,     setPct]     = useState(0)
@@ -15,10 +16,12 @@ export function Dashboard({ userId }: { userId: string }) {
       ProjectService.getActive(),
       ExecutionLogService.getStreak(),
       ExecutionLogService.getStats(),
-    ]).then(async ([p, s, st]) => {
+      BookService.getActive(),
+    ]).then(async ([p, s, st, b]) => {
       setProject(p)
       setStreak(s)
       setStats(st)
+      setBook(b)
       if (p) {
         const tasks = await TaskService.getByProject(p.id)
         if (tasks.length > 0) {
@@ -80,6 +83,29 @@ export function Dashboard({ userId }: { userId: string }) {
             </div>
           )}
         </Card>
+
+        {/* Livro atual */}
+        {book && (() => {
+          const bookPct = book.total_pages > 0 ? Math.round((book.pages_read / book.total_pages) * 100) : 0
+          return (
+            <Card style={{ gridColumn: '1 / -1' }}>
+              <CardLabel>Leitura Atual</CardLabel>
+              <div style={{ fontFamily: 'var(--f-display)', fontSize: '1.1rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                {book.title}
+              </div>
+              {book.author && (
+                <div style={{ fontSize: '0.78rem', color: 'var(--fg-muted)', marginTop: 2 }}>{book.author}</div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 6 }}>
+                <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.75rem', color: 'var(--fg-muted)' }}>{book.pages_read} / {book.total_pages} páginas</span>
+                <span style={{ fontFamily: 'var(--f-mono)', fontSize: '1rem', fontWeight: 500, color: 'var(--accent)' }}>{bookPct}%</span>
+              </div>
+              <div style={{ height: 8, background: 'var(--bg-raised)', borderRadius: 2, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', background: 'var(--accent)', width: `${bookPct}%`, borderRadius: 2, transition: 'width 0.6s ease' }} />
+              </div>
+            </Card>
+          )
+        })()}
 
         {/* Streak */}
         <Card>

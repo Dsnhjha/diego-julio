@@ -381,6 +381,11 @@ export const BookService = {
     const { data } = await supabase!.from('reading_logs').select('*').eq('book_id', bookId).order('log_date', { ascending: false }).limit(limit)
     return data ?? []
   },
+
+  async saveNotes(bookId: string, notes: string): Promise<void> {
+    if (USE_MOCK) return
+    await supabase!.from('books').update({ notes }).eq('id', bookId)
+  },
 }
 
 // ── Investimentos ─────────────────────────────────────────────────────────────

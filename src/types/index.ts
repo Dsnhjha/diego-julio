@@ -57,6 +57,7 @@ export interface Book {
   pages_read: number
   status: 'active' | 'completed'
   created_at: string
+  notes?: string
 }
 
 export interface ReadingLog {

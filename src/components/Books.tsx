@@ -13,9 +13,15 @@ export function Books({ onToast }: { onToast: (msg: string, warn?: boolean) => v
   const [newAuthor,  setNewAuthor]  = useState('')
   const [newTotal,   setNewTotal]   = useState('')
   const [saving,     setSaving]     = useState(false)
+  const [showNotes,  setShowNotes]  = useState(false)
+  const [notesText,  setNotesText]  = useState('')
 
   useEffect(() => {
-    BookService.getAll().then(setBooks)
+    BookService.getAll().then(books => {
+      setBooks(books)
+      const active = books.find(b => b.status === 'active')
+      if (active?.notes) setNotesText(active.notes)
+    })
   }, [])
 
   const active = books.find(b => b.status === 'active') ?? null
@@ -57,6 +63,14 @@ export function Books({ onToast }: { onToast: (msg: string, warn?: boolean) => v
       }
     } catch { onToast('Erro ao registrar.', true) }
     finally { setSaving(false) }
+  }
+
+  async function saveNotes() {
+    if (!active) return
+    await BookService.saveNotes(active.id, notesText)
+    setBooks(prev => prev.map(b => b.id === active.id ? { ...b, notes: notesText } : b))
+    setShowNotes(false)
+    onToast('Anotação salva.')
   }
 
   return (
@@ -132,7 +146,7 @@ export function Books({ onToast }: { onToast: (msg: string, warn?: boolean) => v
 
           {/* Registrar leitura */}
           {showLog === active.id ? (
-            <form onSubmit={logReading} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <form onSubmit={logReading} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
               <input
                 autoFocus
                 type="number"
@@ -146,7 +160,32 @@ export function Books({ onToast }: { onToast: (msg: string, warn?: boolean) => v
               <Btn type="button" onClick={() => setShowLog(null)}>✕</Btn>
             </form>
           ) : (
-            <Btn onClick={() => setShowLog(active.id)}>+ Páginas lidas hoje</Btn>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Btn onClick={() => setShowLog(active.id)}>+ Páginas lidas hoje</Btn>
+              <Btn onClick={() => setShowNotes(v => !v)}>📝 Anotações</Btn>
+            </div>
+          )}
+
+          {/* Anotações */}
+          {showNotes && (
+            <div style={{ marginTop: 12 }}>
+              <label style={labelSt}>Anotações do livro</label>
+              <textarea
+                autoFocus
+                value={notesText}
+                onChange={e => setNotesText(e.target.value.slice(0, 500))}
+                placeholder="Insights, citações, reflexões..."
+                rows={4}
+                style={{ ...inputSt, resize: 'vertical', lineHeight: 1.5 }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.7rem', color: 'var(--fg-muted)' }}>{notesText.length}/500</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Btn variant="primary" onClick={saveNotes}>Salvar</Btn>
+                  <Btn onClick={() => setShowNotes(false)}>Cancelar</Btn>
+                </div>
+              </div>
+            </div>
           )}
         </Card>
       )}
