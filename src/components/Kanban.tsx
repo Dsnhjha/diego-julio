@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ProjectService, TaskService } from '../lib/services'
+import { InviteService, ProjectService, TaskService } from '../lib/services'
 import type { Project, Task } from '../types'
 import { Btn, Card } from './ui'
 
@@ -17,6 +17,9 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
   const [savingProj,   setSavingProj]   = useState(false)
   const [showForm,     setShowForm]     = useState<string | null>(null)
   const [newTitle,     setNewTitle]     = useState('')
+  const [showInvite,   setShowInvite]   = useState<string | null>(null)
+  const [inviteEmail,  setInviteEmail]  = useState('')
+  const [sendingInvite,setSendingInvite]= useState(false)
 
   useEffect(() => {
     ProjectService.getActiveAll().then(async ps => {
@@ -71,6 +74,21 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
     await TaskService.updateStatus(id, status)
     setTasks(prev => ({ ...prev, [projectId]: prev[projectId].map(t => t.id === id ? { ...t, status } : t) }))
     if (status === 'completed') onToast('Tarefa concluída. ✓')
+  }
+
+  async function sendInvite(projectId: string) {
+    if (!inviteEmail.trim()) return
+    setSendingInvite(true)
+    try {
+      await InviteService.sendInvite(projectId, inviteEmail.trim())
+      onToast('Convite enviado! ✓')
+      setShowInvite(null)
+      setInviteEmail('')
+    } catch {
+      onToast('Erro ao enviar convite.', true)
+    } finally {
+      setSendingInvite(false)
+    }
   }
 
   async function deleteTask(projectId: string, id: string) {
@@ -157,6 +175,11 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
                     <div style={{ fontFamily: 'var(--f-mono)', fontSize: '1rem', fontWeight: 600, color: 'var(--accent)' }}>{pct}%</div>
                     <div style={{ fontFamily: 'var(--f-mono)', fontSize: '0.68rem', color: 'var(--fg-muted)' }}>{done}/{projTasks.length} tarefas</div>
                   </div>
+                  <div onClick={e => e.stopPropagation()}>
+                    <Btn style={{ fontSize: '0.7rem', padding: '4px 10px' }} onClick={() => { setShowInvite(showInvite === project.id ? null : project.id); setInviteEmail('') }}>
+                      👥 Convidar
+                    </Btn>
+                  </div>
                   <span style={{ color: 'var(--fg-muted)', fontSize: '0.85rem' }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
               </div>
@@ -165,6 +188,27 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
               <div style={{ height: 3, background: 'var(--bg-raised)' }}>
                 <div style={{ height: '100%', background: 'var(--accent)', width: `${pct}%`, transition: 'width 0.4s ease' }} />
               </div>
+
+              {/* Formulário de convite */}
+              {showInvite === project.id && (
+                <div style={{ padding: '12px 18px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      autoFocus
+                      type="email"
+                      value={inviteEmail}
+                      onChange={e => setInviteEmail(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && sendInvite(project.id)}
+                      placeholder="E-mail do parceiro"
+                      style={{ ...inputSt, flex: 1 }}
+                    />
+                    <Btn variant="primary" disabled={sendingInvite} onClick={() => sendInvite(project.id)}>
+                      {sendingInvite ? 'Enviando...' : 'Enviar convite'}
+                    </Btn>
+                    <Btn onClick={() => setShowInvite(null)}>✕</Btn>
+                  </div>
+                </div>
+              )}
 
               {/* Kanban expandido */}
               {isOpen && (

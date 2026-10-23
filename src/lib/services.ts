@@ -24,8 +24,19 @@ export const ProjectService = {
 
   async getActiveAll(): Promise<Project[]> {
     if (USE_MOCK) return mockProjects.filter(p => p.status === 'active')
-    const { data } = await supabase!.from('projects').select('*').eq('status', 'active').eq('user_id', uid()).order('created_at', { ascending: true }).limit(2)
-    return data ?? []
+    // Projetos próprios
+    const { data: own } = await supabase!.from('projects').select('*').eq('status', 'active').eq('user_id', uid()).order('created_at', { ascending: true })
+    // Projetos compartilhados com o usuário
+    const { data: memberships } = await supabase!.from('project_members').select('project_id').eq('user_id', uid())
+    const sharedIds = (memberships ?? []).map((m: any) => m.project_id as string)
+    let shared: Project[] = []
+    if (sharedIds.length > 0) {
+      const { data: sharedProjects } = await supabase!.from('projects').select('*').in('id', sharedIds).eq('status', 'active')
+      shared = sharedProjects ?? []
+    }
+    const all = [...(own ?? []), ...shared]
+    const seen = new Set<string>()
+    return all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true })
   },
 
   async getAll(): Promise<Project[]> {
@@ -433,5 +444,55 @@ export const InvestmentService = {
     const { data, error } = await supabase!.from('investment_goals').update({ current_amount, status }).eq('id', id).select().single()
     if (error) throw error
     return data
+  },
+}
+
+// ── Convites ──────────────────────────────────────────────────────────────────
+
+export const InviteService = {
+  async sendInvite(projectId: string, invitedEmail: string): Promise<void> {
+    if (USE_MOCK) return
+    const { error } = await supabase!.from('project_invites').insert({
+      project_id: projectId,
+      invited_by: uid(),
+      invited_email: invitedEmail,
+    })
+    if (error) throw error
+    // Dispara e-mail via Edge Function
+    await supabase!.functions.invoke('send-invite', {
+      body: { projectId, invitedEmail, invitedBy: uid() },
+    })
+  },
+
+  async acceptInvite(token: string, userId: string): Promise<{ projectId: string } | null> {
+    if (USE_MOCK) return null
+    const { data: invite } = await supabase!
+      .from('project_invites')
+      .select('*')
+      .eq('token', token)
+      .is('accepted_at', null)
+      .maybeSingle()
+    if (!invite) return null
+
+    await supabase!.from('project_invites').update({ accepted_at: new Date().toISOString() }).eq('id', invite.id)
+    const { error } = await supabase!.from('project_members').insert({
+      project_id: invite.project_id,
+      user_id: userId,
+      role: 'member',
+    })
+    if (error && !error.message.includes('duplicate')) throw error
+    return { projectId: invite.project_id }
+  },
+
+  async getMembers(projectId: string): Promise<{ user_id: string; role: string }[]> {
+    if (USE_MOCK) return []
+    const { data } = await supabase!.from('project_members').select('user_id, role').eq('project_id', projectId)
+    return data ?? []
+  },
+
+  async getMemberProjects(): Promise<string[]> {
+    if (USE_MOCK) return []
+    const { data } = await supabase!.from('project_members').select('project_id').eq('user_id', uid())
+    return (data ?? []).map((r: any) => r.project_id as string)
   },
 }

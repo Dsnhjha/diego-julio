@@ -10,7 +10,7 @@ import { Kanban }      from './components/Kanban'
 import { Layout }      from './components/Layout'
 import { Parking }     from './components/Parking'
 import { Toast }       from './components/ui'
-import { ExecutionLogService } from './lib/services'
+import { ExecutionLogService, InviteService } from './lib/services'
 
 type Tab = 'dashboard' | 'kanban' | 'identity' | 'parking' | 'evidence' | 'books' | 'investments'
 
@@ -22,9 +22,17 @@ interface ToastState {
 
 export default function App() {
   const { user } = useUser()
-  const [tab,    setTab]    = useState<Tab>('dashboard')
-  const [streak, setStreak] = useState(0)
-  const [toast,  setToast]  = useState<ToastState | null>(null)
+  const [tab,         setTab]         = useState<Tab>('dashboard')
+  const [streak,      setStreak]      = useState(0)
+  const [toast,       setToast]       = useState<ToastState | null>(null)
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [inviteDone,  setInviteDone]  = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('invite')
+    if (token) setInviteToken(token)
+  }, [])
 
   useEffect(() => {
     setUserId(user?.id ?? null)
@@ -34,9 +42,25 @@ export default function App() {
     if (!user?.id) return
     ExecutionLogService.getStreak().then(setStreak)
 
+    // Aceita convite automaticamente após login
+    if (inviteToken && !inviteDone) {
+      setInviteDone(true)
+      InviteService.acceptInvite(inviteToken, user.id).then(result => {
+        if (result) {
+          showToast('Você entrou no projeto compartilhado! 🎉')
+          window.history.replaceState({}, '', '/')
+          setInviteToken(null)
+          setTab('kanban')
+          localStorage.setItem('dj_tab', 'kanban')
+        } else {
+          showToast('Convite inválido ou já usado.', true)
+        }
+      })
+    }
+
     try {
       const saved = localStorage.getItem('dj_tab') as Tab | null
-      if (saved) setTab(saved)
+      if (saved && !inviteToken) setTab(saved)
     } catch { /* sem localStorage */ }
   }, [user?.id])
 
