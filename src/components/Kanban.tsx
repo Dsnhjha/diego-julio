@@ -24,7 +24,6 @@ export function Kanban({ onToast }: { onToast: (msg: string, warn?: boolean) => 
   useEffect(() => {
     ProjectService.getActiveAll().then(async ps => {
       setProjects(ps)
-      if (ps.length > 0) setExpanded(ps[0].id)
       const taskMap: Record<string, Task[]> = {}
       await Promise.all(ps.map(async p => {
         taskMap[p.id] = await TaskService.getByProject(p.id)
